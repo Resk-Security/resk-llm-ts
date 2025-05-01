@@ -1,15 +1,15 @@
-# resk-llm-js
+# resk-llm-ts
 
-[![NPM version](https://img.shields.io/npm/v/resk-llm-js.svg)](https://www.npmjs.com/package/resk-llm-js)
-[![NPM License](https://img.shields.io/npm/l/resk-llm-js.svg)](https://github.com/Resk-Security/resk-llm-js/blob/main/LICENSE) <!-- Assuming LICENSE file exists at root -->
-[![NPM Downloads](https://img.shields.io/npm/dt/resk-llm-js.svg)](https://www.npmjs.com/package/resk-llm-js)
-[![GitHub issues](https://img.shields.io/github/issues/Resk-Security/resk-llm-js.svg)](https://github.com/Resk-Security/resk-llm-js/issues)
-[![GitHub stars](https://img.shields.io/github/stars/Resk-Security/resk-llm-js.svg)](https://github.com/Resk-Security/resk-llm-js/stargazers)
-[![GitHub last commit](https://img.shields.io/github/last-commit/Resk-Security/resk-llm-js.svg)](https://github.com/Resk-Security/resk-llm-js/commits/main)
+[![NPM version](https://img.shields.io/npm/v/resk-llm-ts.svg)](https://www.npmjs.com/package/resk-llm-ts)
+[![NPM License](https://img.shields.io/npm/l/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/blob/main/LICENSE) <!-- Assuming LICENSE file exists at root -->
+[![NPM Downloads](https://img.shields.io/npm/dt/resk-llm-ts.svg)](https://www.npmjs.com/package/resk-llm-ts)
+[![GitHub issues](https://img.shields.io/github/issues/Resk-Security/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/issues)
+[![GitHub stars](https://img.shields.io/github/stars/Resk-Security/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/stargazers)
+[![GitHub last commit](https://img.shields.io/github/last-commit/Resk-Security/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/commits/main)
 [![TypeScript](https://img.shields.io/badge/TypeScript-^5.4.5-blue.svg)](#) <!-- Based on devDependencies -->
-[![LLM Security](https://img.shields.io/badge/LLM-Security-red)](https://github.com/Resk-Security/resk-llm-js)
+[![LLM Security](https://img.shields.io/badge/LLM-Security-red)](https://github.com/Resk-Security/resk-llm-ts)
 
-`resk-llm-js` is a security toolkit for Large Language Models (LLMs) in JavaScript/TypeScript environments. It wraps LLM API clients (initially supporting OpenAI/OpenRouter) to protect against prompt injections, data leakage, and other common security threats.
+`resk-llm-ts` is a security toolkit for Large Language Models (LLMs) in JavaScript/TypeScript environments. It wraps LLM API clients (initially supporting OpenAI/OpenRouter) to protect against prompt injections, data leakage, and other common security threats.
 
 ## Features
 
@@ -25,7 +25,7 @@ The `ReskLLMClient` integrates several security modules:
 
 ## Use Cases
 
-`resk-llm-js` is valuable in various scenarios where LLM interactions need enhanced security within Node.js or browser environments:
+`resk-llm-ts` is valuable in various scenarios where LLM interactions need enhanced security within Node.js or browser environments:
 
 -   💬 **Secure Chatbots & APIs**: Protect Node.js backend APIs or customer-facing chatbots from manipulation and data leaks.
 -   📝 **Safe Content Generation**: Ensure LLM-powered tools built with JavaScript don't produce unsafe or biased content.
@@ -36,19 +36,19 @@ The `ReskLLMClient` integrates several security modules:
 ## Installation
 
 ```bash
-npm install resk-llm-js
+npm install resk-llm-ts
 # or
-yarn add resk-llm-js
+yarn add resk-llm-ts
 ```
 
 ## Quick Start
 
-`resk-llm-js` makes adding security layers to your LLM interactions straightforward. Get started by wrapping your existing OpenAI/OpenRouter client calls.
+`resk-llm-ts` makes adding security layers to your LLM interactions straightforward. Get started by wrapping your existing OpenAI/OpenRouter client calls.
 
 Here's how to protect an OpenAI `chat.completions.create` call:
 
 ```typescript
-import { ReskLLMClient, SecurityException } from 'resk-llm-js';
+import { ReskLLMClient, SecurityException } from 'resk-llm-ts';
 import OpenAI from 'openai'; // Assuming OpenAI is also installed
 
 // Ensure your OPENROUTER_API_KEY environment variable is set
@@ -116,7 +116,7 @@ async function runSecureCompletion() {
     } catch (error: any) {
         if (error instanceof SecurityException) {
             // Expecting the client to block or modify this
-            console.error(`Successfully blocked/handled by resk-llm-js: ${error.message}`);
+            console.error(`Successfully blocked/handled by resk-llm-ts: ${error.message}`);
         } else {
             console.error(`API Error (harmful prompt): ${error.message}`);
         }
@@ -170,7 +170,7 @@ const client = new ReskLLMClient({
 Requires `piiDetection.enabled: true`.
 
 ```typescript
-import { defaultPiiPatterns } from 'resk-llm-js/security/patterns/pii_patterns'; // Adjust path
+import { defaultPiiPatterns } from 'resk-llm-ts/security/patterns/pii_patterns'; // Adjust path
 
 const customPatterns = [
     ...defaultPiiPatterns,
@@ -230,7 +230,7 @@ const client = new ReskLLMClient({
 Requires `vectorDb.enabled: true` and an `embeddingFunction` provided to the client constructor (or using the default OpenAI embedding via the client).
 
 ```typescript
-import { createOpenAIEmbeddingFunction } from 'resk-llm-js'; // Hypothetical helper export
+import { createOpenAIEmbeddingFunction } from 'resk-llm-ts'; // Hypothetical helper export
 
 // Assuming you have an OpenAI client instance `openai`
 const embedFn = createOpenAIEmbeddingFunction(openai);
@@ -282,7 +282,7 @@ Support for other providers (Anthropic, Cohere, etc.) may be added in the future
 
 ## Academic Research & Sources
 
-The development of `resk-llm-js` is informed by research in LLM security. Key concepts include:
+The development of `resk-llm-ts` is informed by research in LLM security. Key concepts include:
 
 -   **Prompt Injection:** (Perez & Ribeiro, 2022; Greshake et al., 2023)
 -   **Data Leakage & PII:** Standard data security principles applied to LLMs.
@@ -304,5 +304,5 @@ This project is licensed under the GPL-3.0 license - see the [LICENSE](LICENSE) 
 
 ## Contact
 
-For questions or support, please open an issue on the [GitHub repository](https://github.com/Resk-Security/resk-llm-js/issues).
+For questions or support, please open an issue on the [GitHub repository](https://github.com/Resk-Security/resk-llm-ts/issues).
 
