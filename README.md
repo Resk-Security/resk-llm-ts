@@ -1,12 +1,12 @@
 # resk-llm-ts
 
 [![NPM version](https://img.shields.io/npm/v/resk-llm-ts.svg)](https://www.npmjs.com/package/resk-llm-ts)
-[![NPM License](https://img.shields.io/npm/l/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/blob/main/LICENSE) <!-- Assuming LICENSE file exists at root -->
+[![NPM License](https://img.shields.io/npm/l/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/blob/main/LICENSE)
 [![NPM Downloads](https://img.shields.io/npm/dt/resk-llm-ts.svg)](https://www.npmjs.com/package/resk-llm-ts)
 [![GitHub issues](https://img.shields.io/github/issues/Resk-Security/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/issues)
 [![GitHub stars](https://img.shields.io/github/stars/Resk-Security/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/stargazers)
 [![GitHub last commit](https://img.shields.io/github/last-commit/Resk-Security/resk-llm-ts.svg)](https://github.com/Resk-Security/resk-llm-ts/commits/main)
-[![TypeScript](https://img.shields.io/badge/TypeScript-^5.4.5-blue.svg)](#) <!-- Based on devDependencies -->
+[![TypeScript](https://img.shields.io/badge/TypeScript-^5.4.5-blue.svg)](https://www.typescriptlang.org/)
 [![LLM Security](https://img.shields.io/badge/LLM-Security-red)](https://github.com/Resk-Security/resk-llm-ts)
 
 `resk-llm-ts` is a security toolkit for Large Language Models (LLMs) in JavaScript/TypeScript environments. It wraps LLM API clients (initially supporting OpenAI/OpenRouter) to protect against prompt injections, data leakage, and other common security threats.
@@ -137,13 +137,11 @@ class SecurityException extends Error {
 
 ## Examples
 
-Explore various use cases and integration patterns in the `/examples` directory (if available):
+Explore various use cases and integration patterns in the `/examples` directory:
 
--   *(Example: `basic_usage.ts`)*
--   *(Example: `express_integration.ts`)*
--   *(Example: `vector_db_setup.ts`)*
-
-*(Add links to actual examples when created)*
+- [Basic Usage](examples/basic_usage.ts)
+- [Express Integration](examples/express_integration.ts)
+- [Vector DB Setup](examples/vector_db_setup.ts)
 
 ## Advanced Security Features Configuration
 
@@ -296,11 +294,9 @@ The development of `resk-llm-ts` is informed by research in LLM security. Key co
 
 Contributions are welcome! Please open an issue or pull request on GitHub. Adhere to standard coding practices and ensure tests pass.
 
-*(Link to CONTRIBUTING.md and CODE_OF_CONDUCT.md if they exist)*
-
 ## License
 
-This project is licensed under the GPL-3.0 license - see the [LICENSE](LICENSE) file for details. <!-- Assuming LICENSE file exists at root -->
+This project is licensed under the GPL-3.0 license - see the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
