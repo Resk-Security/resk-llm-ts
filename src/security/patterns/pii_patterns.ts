@@ -7,9 +7,9 @@
 
 // Re-exporting the default PII patterns from the main protector module for now
 // Ideally, populate this file with more granular patterns as needed.
-export { defaultPIIRegex } from '../pii_protector';
 
-export const emailPattern: RegExp = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g;
+// Make sure this matches test@example.com used in tests
+export const emailPattern: RegExp = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
 // Basic North American phone number patterns
 export const phonePatternNA: RegExp = /\b(?:\+?1[ -.]?)?[(]?\d{3}[)]?[ -.]?\d{3}[ -.]?\d{4}\b/g;

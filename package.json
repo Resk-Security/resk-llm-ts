@@ -1,17 +1,19 @@
 {
-  "name": "resk-llm-js",
-  "version": "0.1.0",
-  "description": "A JavaScript library for secure LLM interactions.",
-  "main": "dist/index.js",
+  "name": "resk-llm-ts",
+  "version": "0.1.1",
+  "type": "module",
+  "description": "A TypeScript library for secure LLM interactions.",
+  "main": "dist/index.ts",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "lint": "eslint src/**/*.ts test/**/*.ts",
     "test": "jest",
     "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Resk-Security/resk-llm-js" 
+    "url": "git+https://github.com/Resk-Security/resk-llm-js"
   },
   "keywords": [
     "llm",
@@ -20,28 +22,34 @@
     "openrouter",
     "resk",
     "prompt injection",
-    "pii",
+    "openai",
     "moderation"
   ],
-  "author": "Resk contact@resk.fr", 
+  "author": "Resk contact@resk.fr",
   "license": "GPL-3.0 license",
   "bugs": {
-    "url": "https://github.com/Resk-Security/resk-llm-jsissues"
+    "url": "https://github.com/Resk-Security/resk-llm-js#issues"
   },
   "homepage": "https://github.com/Resk-Security/resk-llm-js#readme",
   "devDependencies": {
+    "@eslint/js": "^9.25.1",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.12.12",
     "@types/mathjs": "^9.4.2",
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
+    "eslint": "^9.25.1",
+    "globals": "^16.0.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.31.1"
   },
   "dependencies": {
-    "openai": "^4.47.1",
-    "mathjs": "^12.4.2"
+    "mathjs": "^12.4.2",
+    "openai": "^4.47.1"
   },
   "files": [
     "dist/**/*"
   ]
-} 
+}

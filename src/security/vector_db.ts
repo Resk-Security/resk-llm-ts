@@ -1,7 +1,7 @@
 import { SecurityFeatureConfig } from "../index";
 import { EmbeddingFunction, VectorEntry, VectorMetadata, SimilarityResult } from "../types";
 import { randomUUID } from 'crypto'; // For generating unique IDs
-import { cos, dot, norm, subtract, number } from 'mathjs'; // For cosine similarity
+import { dot, norm, number } from 'mathjs'; // Keep used imports
 
 export interface VectorDBConfig extends SecurityFeatureConfig {
     embeddingFunction: EmbeddingFunction;
@@ -72,6 +72,13 @@ export class VectorDatabase {
         if (this.config.enabled) {
              console.warn("Using basic in-memory VectorDatabase. NOT suitable for production.")
         }
+    }
+
+    /**
+     * Checks if the Vector Database feature is configured to be enabled.
+     */
+    public isEnabled(): boolean {
+        return this.config.enabled;
     }
 
     /**

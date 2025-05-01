@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { PIIDetectionConfig } from "../index"; // Assuming ReskSecurityConfig is in index.ts
+// Import config type from types.ts
+import { type PIIDetectionConfig } from "../types"; 
 import { defaultPiiPatterns } from "./patterns/pii_patterns"; // Import from patterns file
 
 // Basic regex patterns for common PII defined in patterns/pii_patterns.ts
@@ -24,19 +25,21 @@ export class PIIProtector {
     private replacePII(text: string): string {
         let processedText = text;
         for (const pattern of this.config.patterns || []) {
-            // Reset lastIndex for global regex
-            pattern.lastIndex = 0; 
-            processedText = processedText.replace(pattern, (match) => `[REDACTED_${this.getPIIType(pattern)}]`);
+            // Need to create a fresh copy of the regex to ensure proper global replacement
+            // The lastIndex property resets after match, causing subsequent calls to skip matches
+            const freshPattern = new RegExp(pattern.source, pattern.flags);
+            processedText = processedText.replace(freshPattern, (_match) => `[REDACTED_${this.getPIIType(pattern)}]`);
         }
         return processedText;
     }
 
     private getPIIType(pattern: RegExp): string {
         // Simple type guessing based on pattern source (improve as needed)
-        if (pattern.source.includes('@')) return 'EMAIL';
-        if (pattern.source.includes('\d{3}[ -.]?\d{4}')) return 'PHONE'; // Adjusted for new pattern file
-        if (pattern.source.includes('\d{4}[ -]?){3}')) return 'CREDIT_CARD';
-        if (pattern.source.includes('\.')) return 'IP_ADDRESS'; // Very basic
+        const source = pattern.source;
+        if (source.includes('@')) return 'EMAIL';
+        if (source.includes('\\d{3}[)]?[ -.]?\\d{3}')) return 'PHONE';
+        if (source.includes('\\d{4}[ -]?){3}')) return 'CREDIT_CARD';
+        if (source.includes('25[0-5]|2[0-4][0-9]')) return 'IP_ADDRESS';
         return 'PII';
     }
 
@@ -51,8 +54,17 @@ export class PIIProtector {
         
         // Only process string content
         if (typeof message.content === 'string') {
-            const processedContent = this.replacePII(message.content);
-            return message.content === processedContent 
+            const originalContent = message.content;
+            const processedContent = this.replacePII(originalContent);
+            
+            // For debugging
+            if (originalContent !== processedContent) {
+                console.log(`PII detected and redacted: 
+                  Original: ${originalContent}
+                  Redacted: ${processedContent}`);
+            }
+            
+            return originalContent === processedContent 
                 ? message 
                 : { ...message, content: processedContent };
         }
@@ -72,14 +84,22 @@ export class PIIProtector {
         const originalContent = completion.choices[0].message.content;
         const redactedContent = this.replacePII(originalContent);
 
+        // For debugging
+        if (originalContent !== redactedContent) {
+            console.log(`PII detected in output and redacted: 
+              Original: ${originalContent}
+              Redacted: ${redactedContent}`);
+        }
+
         if (originalContent === redactedContent) {
              return completion; // No changes needed
         }
 
-        // Create a deep copy only if changes were made
-        const newCompletion = JSON.parse(JSON.stringify(completion)); 
-        newCompletion.choices[0].message.content = redactedContent;
+        // Modify the content directly on the original object for simplicity in this context
+        // WARNING: This mutates the input object. If that's undesirable, 
+        // a more robust deep copy mechanism is needed.
+        completion.choices[0].message.content = redactedContent;
         
-        return newCompletion;
+        return completion;
     }
 } 

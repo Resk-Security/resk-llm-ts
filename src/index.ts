@@ -1,34 +1,30 @@
 import OpenAI from 'openai';
 import { type ChatCompletionCreateParamsNonStreaming, type ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import { PIIProtector, type PIIDetectionConfig, defaultPIIRegex } from './security/pii_protector';
-import { InputSanitizer, type InputSanitizationConfig } from './security/sanitizer';
-import { PromptInjectionDetector, type PromptInjectionConfig } from './security/prompt_injection';
-import { HeuristicFilter, type HeuristicFilterConfig } from './security/heuristic_filter';
-import { VectorDatabase, type VectorDBConfig } from './security/vector_db';
-import { CanaryTokenManager, type CanaryTokenConfig } from './security/canary_tokens';
-import { type EmbeddingFunction, type SimilarityResult } from './types';
+// Import config types from types.ts
+import {
+    type ReskSecurityConfig,
+    type EmbeddingFunction,
+    type SimilarityResult,
+    type PIIDetectionConfig,
+    type InputSanitizationConfig,
+    type PromptInjectionConfig,
+    type HeuristicFilterConfig,
+    type VectorDBConfig,
+    type CanaryTokenConfig,
+    type SecurityFeatureConfig
+} from './types';
+import { PIIProtector } from './security/pii_protector';
+import { InputSanitizer } from './security/sanitizer';
+import { PromptInjectionDetector } from './security/prompt_injection';
+import { HeuristicFilter } from './security/heuristic_filter';
+import { VectorDatabase } from './security/vector_db';
+import { CanaryTokenManager } from './security/canary_tokens';
 import { defaultPiiPatterns } from './security/patterns/pii_patterns'; // Import PII pattern defaults
 
-// --- Configuration Interfaces --- 
+// --- Configuration Interfaces are now in types.ts ---
 
-// Base config for features that are just enabled/disabled
-export interface SecurityFeatureConfig {
-    enabled: boolean;
-}
-
-// Re-export specific configs from modules
-export { PIIDetectionConfig, InputSanitizationConfig, PromptInjectionConfig, HeuristicFilterConfig, VectorDBConfig, CanaryTokenConfig };
-
-// Main configuration combining all features
-export interface ReskSecurityConfig {
-    inputSanitization?: InputSanitizationConfig;
-    piiDetection?: PIIDetectionConfig;
-    promptInjection?: PromptInjectionConfig;
-    heuristicFilter?: HeuristicFilterConfig;
-    vectorDb?: Omit<VectorDBConfig, 'embeddingFunction'>; // Embedding fn managed by client
-    canaryTokens?: CanaryTokenConfig;
-    contentModeration?: SecurityFeatureConfig; // Placeholder
-}
+// Re-export specific configs from types.ts (optional, but can be convenient)
+export { PIIDetectionConfig, InputSanitizationConfig, PromptInjectionConfig, HeuristicFilterConfig, VectorDBConfig, CanaryTokenConfig, SecurityFeatureConfig, ReskSecurityConfig };
 
 // --- Helper Function for OpenAI Embeddings --- 
 
@@ -120,14 +116,18 @@ export class ReskLLMClient {
         this.canaryTokenManager = new CanaryTokenManager(this.globalSecurityConfig.canaryTokens);
 
         // Initialize Vector DB only if enabled and embedding function is available
-        if (this.globalSecurityConfig.vectorDb?.enabled && this.embeddingFn) {
+        // NOTE: VectorDBConfig in types.ts includes embeddingFunction, but ReskSecurityConfig omits it
+        // We re-add it here when constructing VectorDatabase
+        const vectorDbUserConfig = this.globalSecurityConfig.vectorDb;
+        if (vectorDbUserConfig?.enabled && this.embeddingFn) {
             this.vectorDb = new VectorDatabase({
-                ...this.globalSecurityConfig.vectorDb, // Spread specific DB config
-                enabled: true, // Ensure enabled is true here
+                ...vectorDbUserConfig,
+                enabled: true, // Ensure enabled is explicitly true
                 embeddingFunction: this.embeddingFn, // Provide the function
             });
-        } else if (this.globalSecurityConfig.vectorDb?.enabled && !this.embeddingFn) {
+        } else if (vectorDbUserConfig?.enabled && !this.embeddingFn) {
             console.warn("Vector DB security feature is enabled, but no embedding function is available. Feature disabled.");
+            // Ensure the effective global config reflects this disablement
             if(this.globalSecurityConfig.vectorDb) this.globalSecurityConfig.vectorDb.enabled = false;
         }
     }
@@ -139,7 +139,8 @@ export class ReskLLMClient {
             piiDetection: { enabled: true, redact: false, patterns: defaultPiiPatterns },
             promptInjection: { enabled: true, level: 'basic' },
             heuristicFilter: { enabled: true },
-            vectorDb: { enabled: true, similarityThreshold: 0.85 }, // Requires embedding fn
+            // Default VectorDB config (embedding function added later if needed)
+            vectorDb: { enabled: true, similarityThreshold: 0.85 }, 
             canaryTokens: { enabled: true },
             contentModeration: { enabled: false }, // Placeholder
         };
@@ -147,10 +148,16 @@ export class ReskLLMClient {
         // Deep merge would be better for nested objects, but this is okay for now
         const merged: Required<ReskSecurityConfig> = {
              inputSanitization: { ...defaults.inputSanitization, ...providedConfig?.inputSanitization },
-             piiDetection: { ...defaults.piiDetection, ...providedConfig?.piiDetection },
+             // Ensure patterns aren't accidentally overwritten with undefined if user provides {} for piiDetection
+             piiDetection: { 
+                 ...defaults.piiDetection, 
+                 ...(providedConfig?.piiDetection || {}), 
+                 patterns: providedConfig?.piiDetection?.patterns ?? defaults.piiDetection.patterns
+             },
              promptInjection: { ...defaults.promptInjection, ...providedConfig?.promptInjection },
              heuristicFilter: { ...defaults.heuristicFilter, ...providedConfig?.heuristicFilter },
-             vectorDb: { ...defaults.vectorDb, ...providedConfig?.vectorDb },
+             // Merge vectorDb config carefully
+             vectorDb: { ...defaults.vectorDb, ...(providedConfig?.vectorDb || {}) },
              canaryTokens: { ...defaults.canaryTokens, ...providedConfig?.canaryTokens },
              contentModeration: { ...defaults.contentModeration, ...providedConfig?.contentModeration },
         }
@@ -158,8 +165,9 @@ export class ReskLLMClient {
     }
 
     // --- Public API to Add Attack Patterns --- 
-    public async addAttackPattern(text: string, metadata: Record<string, any> = {}) {
-        if (this.vectorDb?.config.enabled) {
+    public async addAttackPattern(text: string, metadata: Record<string, unknown> = {}) {
+        // Use the new isEnabled() method
+        if (this.vectorDb?.isEnabled()) {
            await this.vectorDb.addTextEntry(text, metadata);
            console.info(`Added attack pattern to Vector DB: ${text.substring(0, 50)}...`);
         } else {
@@ -183,8 +191,8 @@ export class ReskLLMClient {
              processedMessages = preCheckResult.processedMessages;
              securityInfo = preCheckResult.securityInfo;
              blockReason = preCheckResult.blockReason;
-        } catch (error: any) { // Catch errors from security checks (e.g., prompt injection)
-             console.error("Security Pre-Check Error:", error.message);
+        } catch (error: unknown) { // Use unknown instead of any
+             console.error("Security Pre-Check Error:", error instanceof Error ? error.message : String(error));
              throw error; // Re-throw the error to halt processing
         }
 
@@ -198,8 +206,11 @@ export class ReskLLMClient {
             ...params,
             messages: processedMessages,
         };
-        delete (openAIParams as any).securityConfig; // Remove our config object
-        delete (openAIParams as any)._processedSecurityInfo; // Remove internal prop
+        
+        // A safer way to delete custom properties
+        const customOpenAIParams = openAIParams as Partial<ReskChatCompletionCreateParams>;
+        delete customOpenAIParams.securityConfig;
+        delete customOpenAIParams._processedSecurityInfo;
 
         // 4. Call OpenRouter API
         const completion = await this.openai.chat.completions.create(openAIParams);
@@ -230,7 +241,7 @@ export class ReskLLMClient {
         blockReason: string | null; 
     }> {
         let currentMessages = messages;
-        let securityInfo: ProcessedSecurityInfo = {};
+        const securityInfo: ProcessedSecurityInfo = {};
         let blockReason: string | null = null;
 
         // --- Apply checks sequentially --- 
@@ -242,90 +253,64 @@ export class ReskLLMClient {
         }
         
         // Process each user message through remaining content checks
-        for (const msg of currentMessages) {
+        for (let i = 0; i < currentMessages.length; i++) {
+            const msg = currentMessages[i];
              if (typeof msg.content !== 'string' || msg.role !== 'user') {
                  continue; // Only process string content of user messages for now
              }
              const content = msg.content;
 
-             // 2. Heuristic Filter
-            if (!blockReason && config.heuristicFilter.enabled) {
-                const filterResult = this.heuristicFilter.filter(content);
-                if (filterResult.detected) {
-                    blockReason = filterResult.reason; // Block immediately
-                    break; // Stop further checks on this message
+            // 2. Heuristic Filter
+            if (config.heuristicFilter.enabled) {
+                const heuristicResult = this.heuristicFilter.filter(content);
+                if (heuristicResult.detected) {
+                    blockReason = heuristicResult.reason || "Blocked by heuristic filter";
+                    break; // Block immediately
                 }
             }
 
-             // 3. Prompt Injection Detection
-             if (!blockReason && config.promptInjection.enabled) {
-                 const injectionDetected = this.promptInjector.detect(content);
-                 if (injectionDetected) {
-                     // Configurable action: throw error, log, modify prompt, etc.
-                     // For now, we'll set blockReason.
-                     blockReason = "Potential prompt injection detected.";
-                     break; // Stop further checks on this message
-                 }
-             }
-
-             // 4. Vector DB Similarity Check
-             // Check if vectorDb instance exists (it's only created if enabled and fn exists)
-             if (!blockReason && this.vectorDb) { // Check existence of the initialized instance
+            // 3. Prompt Injection (Basic)
+            if (config.promptInjection.enabled && config.promptInjection.level === 'basic') {
+                if (this.promptInjector.detect(content)) {
+                    blockReason = "Potential prompt injection detected.";
+                    break; // Block immediately
+                }
+            }
+            
+            // 4. Vector DB Check (if enabled and initialized)
+            // Use isEnabled() here too
+            if (this.vectorDb?.isEnabled()) { 
                 const similarityResult = await this.vectorDb.detect(content);
+                securityInfo.similarityResult = similarityResult; // Store result
                 if (similarityResult.detected) {
-                    // Decide action based on similarity (e.g., block vs. flag)
-                    blockReason = `High similarity (${similarityResult.max_similarity.toFixed(2)}) to known attack pattern detected.`;
-                    securityInfo.similarityResult = similarityResult; // Store for potential logging
-                    break; // Stop further checks on this message
-                }
-            }
-        }
-        // If blocked during iteration, we might have partially processed messages.
-        // It's safer to return the original messages if blocked to avoid sending modified content.
-        if (blockReason) {
-            return { processedMessages: messages, securityInfo, blockReason };
-        }
-
-        // --- Apply modifications after checks --- 
-
-        let finalMessages = currentMessages; // Start with messages potentially sanitized
-
-        // 5. PII Detection (on input - potentially redact *before* sending)
-        if (config.piiDetection.enabled) {
-            // Pass potentially sanitized messages to PII protector
-             finalMessages = finalMessages.map(msg => this.piiProtector.processMessageInput(msg));
-        }
-
-        // 6. Canary Token Insertion (applied last to the final prompt string)
-        if (config.canaryTokens.enabled) {
-             // Find the last message to insert the token into (usually user message)
-             // More sophisticated logic might be needed for complex conversations
-            let lastMessageIndex = -1;
-            for(let i = finalMessages.length - 1; i >= 0; i--) {
-                if (typeof finalMessages[i].content === 'string') {
-                    lastMessageIndex = i;
-                    break;
+                     blockReason = `High similarity (${similarityResult.max_similarity.toFixed(2)}) to known attack pattern detected.`;
+                    break; // Block immediately
                 }
             }
 
-            if (lastMessageIndex !== -1) {
-                const msgToModify = finalMessages[lastMessageIndex];
-                const context = { timestamp: Date.now() }; // Add relevant context if needed
-                const { modifiedText, token } = this.canaryTokenManager.insertToken(msgToModify.content as string, context);
-                
-                // Create a new message object to avoid modifying the original array directly
-                finalMessages = [
-                    ...finalMessages.slice(0, lastMessageIndex),
-                    { ...msgToModify, content: modifiedText },
-                    ...finalMessages.slice(lastMessageIndex + 1)
-                ];
-                securityInfo.canaryToken = token;
-            } else {
-                 console.warn("Could not find suitable message to insert canary token.")
+            // 5. PII Detection (Redaction happens separately if enabled)
+            if (config.piiDetection.enabled && config.piiDetection.redact) {
+                const processedMsg = this.piiProtector.processMessageInput(msg);
+                // Important: Update the message in the array if it changed
+                if (processedMsg !== msg) {
+                    currentMessages[i] = processedMsg;
+                }
+            }
+
+            // 6. Canary Token Insertion
+            if (config.canaryTokens.enabled) {
+                 // Ensure msg.content is still a string after PII redaction
+                 if(typeof currentMessages[i].content === 'string') { 
+                     const { modifiedText, token } = this.canaryTokenManager.insertToken(currentMessages[i].content as string);
+                     // Important: Update the message in the array
+                     currentMessages[i] = { ...currentMessages[i], content: modifiedText };
+                     securityInfo.canaryToken = token; // Store the token for post-check
+                 }
             }
         }
         
-        return { processedMessages: finalMessages, securityInfo, blockReason };
+        // Return results if no blocking occurred
+        return { processedMessages: currentMessages, securityInfo, blockReason };
     }
 
     private applyPostSecurityChecks(

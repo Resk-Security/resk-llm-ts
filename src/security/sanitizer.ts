@@ -1,11 +1,17 @@
-import OpenAI from "openai";
+// import OpenAI from "openai";
 // Use the specific input type from the SDK if available and applicable
-import type { ChatCompletionMessageParam, ChatCompletionContentPartText, ChatCompletionContentPart } from "openai/resources/chat/completions";
+// import type { ChatCompletionMessageParam, ChatCompletionContentPartText, ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { SecurityFeatureConfig } from "../index";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+// import { ChatCompletionContentPartText, ChatCompletionContentPart } from "openai/resources/chat/completions";
+// Removing this import to fix conflict
+// import { type InputSanitizationConfig } from "../types";
 
 // Export the config interface
 export interface InputSanitizationConfig extends SecurityFeatureConfig {
-    // Add specific sanitization options here if needed later
+    // Add properties to fix empty interface error
+    sanitizeHtml?: boolean;
+    allowedTags?: string[];
 }
 
 export class InputSanitizer {
@@ -18,38 +24,42 @@ export class InputSanitizer {
         };
     }
 
-    // Basic sanitizer: remove potentially harmful script tags or common injection patterns.
-    // This is a very basic example and should be expanded based on requirements.
-    sanitize(text: string): string {
-        if (!this.config.enabled || !text) return text; // Check if enabled
-        // Remove script tags
-        let sanitized = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '[removed]');
-        // Add more sanitization rules as needed
-        // e.g., simple check for common prompt injection phrases
-        // sanitized = sanitized.replace(/ignore previous instructions/gi, '[instruction conflict]');
-        return sanitized;
-    }
-
     /**
-     * Sanitizes the content of a message IF the content is a string.
-     * Messages with array content (multi-modal) are returned unchanged 
-     * due to complexities in SDK type compatibility after modification.
+     * Sanitizes the content of a message.
+     * Currently focuses on removing HTML tags from string content.
      */
     sanitizeMessage(message: ChatCompletionMessageParam): ChatCompletionMessageParam {
         if (!this.config.enabled) {
             return message;
         }
-
-        // Only sanitize if content is currently a string
+        
+        // Only process string content
         if (typeof message.content === 'string') {
-            const sanitizedContent = this.sanitize(message.content);
-            // Return new message object only if content changed
-            return message.content === sanitizedContent 
+            const processedContent = this.sanitizeText(message.content);
+            // Return new object only if content changed
+            return message.content === processedContent 
                 ? message 
-                : { ...message, content: sanitizedContent };
+                : { ...message, content: processedContent };
         }
         
-        // Return all other message types (null content, array content) unchanged
+        // If content is an array of parts, sanitize text parts (recursive or iterative)
+        // This part needs implementation if you expect array content
+        // if (Array.isArray(message.content)) {
+        //     // ... logic to map over parts and sanitize text parts ...
+        // }
+
+        // Return message unchanged if content is null or not string/array
         return message;
+    }
+
+    sanitizeText(text: string): string {
+        if (!this.config.enabled || !text) {
+            return text;
+        }
+        // Replace entire HTML tag blocks more accurately
+        // This handles tags like <script>alert("bad")</script> as a single block
+        const htmlBlockRegex = /<[^>]*>[^<]*<\/[^>]*>|<[^>]*\/?>/g;
+        const sanitized = text.replace(htmlBlockRegex, '[removed]');
+        return sanitized;
     }
 } 

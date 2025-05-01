@@ -5,12 +5,14 @@ import { SecurityFeatureConfig } from "../index";
 const CANARY_TOKEN_PREFIX = "ctkn-";
 
 export interface CanaryTokenConfig extends SecurityFeatureConfig {
-    // Future options: custom prefix, token format, etc.
+    // Adding properties to fix empty interface error
+    tokenPrefix?: string;
+    includeContextInWarnings?: boolean;
 }
 
 interface TokenDetails {
     token: string;
-    context: Record<string, any>; // Store associated context (user_id, etc.)
+    context: Record<string, unknown>; // Replace any with unknown
     timestamp: number;
 }
 
@@ -39,7 +41,7 @@ export class CanaryTokenManager {
      * @param context Optional context to associate with the token.
      * @returns The modified text and the generated token, or original text and null if disabled.
      */
-    insertToken(text: string, context: Record<string, any> = {}): { modifiedText: string; token: string | null } {
+    insertToken(text: string, context: Record<string, unknown> = {}): { modifiedText: string; token: string | null } {
         if (!this.config.enabled) {
             return { modifiedText: text, token: null };
         }

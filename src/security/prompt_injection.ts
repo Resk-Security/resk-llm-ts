@@ -1,17 +1,7 @@
-import { PromptInjectionConfig } from "../index";
+import { type PromptInjectionConfig } from "../types";
 import { defaultInjectionPatterns } from "./patterns/llm_injection_patterns"; // Import from patterns
 
-// Very basic detection patterns - expand significantly for real use
-const basicInjectionPatterns: RegExp[] = [
-    /ignore all previous instructions/i,
-    /ignore prior commands/i,
-    /forget what i told you/i,
-    /you are now in .* mode/i,
-    /reveal your system prompt/i,
-    /print your initial instructions/i,
-    /\bSYSTEM PROMPT\b/i,
-    // Add more based on known attack vectors
-];
+// Removed unused variable 'basicInjectionPatterns'
 
 export class PromptInjectionDetector {
     private config: PromptInjectionConfig;
