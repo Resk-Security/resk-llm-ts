@@ -1,6 +1,6 @@
 {
   "name": "resk-llm-ts",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "type": "module",
   "description": "A TypeScript library for secure LLM interactions.",
   "main": "dist/index.ts",
