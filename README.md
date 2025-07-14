@@ -102,7 +102,7 @@ async function runSecureCompletion() {
         }
     }
 
-    console.log("\n--- Running Harmful Prompt ---");
+    console.log("\n--- Running Harmful Prompt ---");  
     try {
         const response = await reskClient.chat.completions.create({
             model: "openai/gpt-4o",
