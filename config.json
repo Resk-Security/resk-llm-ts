@@ -1,0 +1,9 @@
+{
+  "inputSanitization": { "enabled": true },
+  "piiDetection": { "enabled": true, "redact": true },
+  "promptInjection": { "enabled": true, "level": "advanced" },
+  "heuristicFilter": { "enabled": true, "customPatterns": [] },
+  "vectorDb": { "enabled": true, "similarityThreshold": 0.8 },
+  "canaryTokens": { "enabled": true },
+  "contentModeration": { "enabled": true }
+} 

@@ -85,3 +85,15 @@ export interface ReskSecurityConfig {
     canaryTokens?: CanaryTokenConfig;
     contentModeration?: SecurityFeatureConfig; // Placeholder
 } 
+
+/**
+ * Interface générique pour une base de données vectorielle (custom DB, Pinecone, etc.)
+ */
+export interface IVectorDatabase {
+    isEnabled(): boolean;
+    addTextEntry(text: string, metadata?: VectorMetadata): Promise<string | null>;
+    addEntry(vector: number[], metadata?: VectorMetadata): string | null;
+    searchSimilarText(text: string, k?: number, threshold?: number): Promise<SimilarityResult>;
+    searchSimilarVector(queryVector: number[], k?: number, threshold?: number): SimilarityResult;
+    detect(text: string): Promise<SimilarityResult>;
+} 

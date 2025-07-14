@@ -269,6 +269,61 @@ const client = new ReskLLMClient({
 // Leaks might result in warnings or SecurityExceptions depending on implementation.
 ```
 
+## Production Configuration with config.json
+
+For production deployments, you can define all security settings in a `config.json` file at the root of your project. This file should only be edited by the application developer.
+
+Example `config.json`:
+```json
+{
+  "inputSanitization": { "enabled": true },
+  "piiDetection": { "enabled": true, "redact": true },
+  "promptInjection": { "enabled": true, "level": "advanced" },
+  "heuristicFilter": { "enabled": true, "customPatterns": [] },
+  "vectorDb": { "enabled": true, "similarityThreshold": 0.8 },
+  "canaryTokens": { "enabled": true },
+  "contentModeration": { "enabled": true }
+}
+```
+
+To load this config automatically:
+```typescript
+import { loadSecurityConfig } from './src/configLoader';
+const config = loadSecurityConfig();
+const client = new ReskLLMClient({ securityConfig: config });
+```
+
+## Custom Vector Database (Advanced)
+
+You can inject your own vector database implementation (e.g. Pinecone, Chroma, Weaviate) by implementing the `IVectorDatabase` interface and passing it to the client:
+
+```typescript
+import { IVectorDatabase, VectorMetadata, SimilarityResult } from './src/types';
+class MyCustomVectorDB implements IVectorDatabase {
+  isEnabled() { return true; }
+  async addTextEntry(text: string, metadata?: VectorMetadata) { return 'custom-id'; }
+  addEntry(vector: number[], metadata?: VectorMetadata) { return 'custom-id'; }
+  async searchSimilarText(text: string, k?: number, threshold?: number): Promise<SimilarityResult> { return { detected: false, max_similarity: 0, similar_entries: [] }; }
+  searchSimilarVector(queryVector: number[], k?: number, threshold?: number): SimilarityResult { return { detected: false, max_similarity: 0, similar_entries: [] }; }
+  async detect(text: string): Promise<SimilarityResult> { return { detected: false, max_similarity: 0, similar_entries: [] }; }
+}
+const client = new ReskLLMClient({ vectorDbInstance: new MyCustomVectorDB() });
+```
+
+See [`examples/advanced_security_usage.ts`](examples/advanced_security_usage.ts) for a full example.
+
+## Custom Patterns
+
+You can provide your own prohibited words, patterns, or PII regexes via the config or directly in the security modules. See the `patterns/` directory for extensible pattern files (doxxing, malicious URLs, IP leakage, etc.).
+
+## Security Pattern Tests
+
+Unit tests for all security patterns are provided in [`test/patterns.test.ts`](test/patterns.test.ts). Run them with:
+```bash
+npm test
+```
+This ensures your custom or default patterns are effective and up-to-date.
+
 ## Provider Integrations
 
 Currently supports wrapping clients compatible with the OpenAI API signature, primarily tested with:

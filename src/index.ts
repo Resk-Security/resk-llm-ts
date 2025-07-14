@@ -11,7 +11,8 @@ import {
     type HeuristicFilterConfig,
     type VectorDBConfig,
     type CanaryTokenConfig,
-    type SecurityFeatureConfig
+    type SecurityFeatureConfig,
+    type IVectorDatabase
 } from './types';
 import { PIIProtector } from './security/pii_protector';
 import { InputSanitizer } from './security/sanitizer';
@@ -73,7 +74,7 @@ export class ReskLLMClient {
     private piiProtector: PIIProtector;
     private promptInjector: PromptInjectionDetector;
     private heuristicFilter: HeuristicFilter;
-    private vectorDb: VectorDatabase | null = null;
+    private vectorDb: IVectorDatabase | null = null; // Peut être custom ou interne
     private canaryTokenManager: CanaryTokenManager;
 
     constructor(options: {
@@ -83,6 +84,7 @@ export class ReskLLMClient {
         securityConfig?: ReskSecurityConfig;
         embeddingFunction?: EmbeddingFunction; // Allow custom embedding function
         embeddingModel?: string; // Specify embedding model if using OpenAI
+        vectorDbInstance?: IVectorDatabase; // Permettre l'injection d'une DB custom
     }) {
         if (options.openaiClient) {
             this.openai = options.openaiClient;
@@ -115,20 +117,22 @@ export class ReskLLMClient {
         this.heuristicFilter = new HeuristicFilter(this.globalSecurityConfig.heuristicFilter);
         this.canaryTokenManager = new CanaryTokenManager(this.globalSecurityConfig.canaryTokens);
 
-        // Initialize Vector DB only if enabled and embedding function is available
-        // NOTE: VectorDBConfig in types.ts includes embeddingFunction, but ReskSecurityConfig omits it
-        // We re-add it here when constructing VectorDatabase
-        const vectorDbUserConfig = this.globalSecurityConfig.vectorDb;
-        if (vectorDbUserConfig?.enabled && this.embeddingFn) {
-            this.vectorDb = new VectorDatabase({
-                ...vectorDbUserConfig,
-                enabled: true, // Ensure enabled is explicitly true
-                embeddingFunction: this.embeddingFn, // Provide the function
-            });
-        } else if (vectorDbUserConfig?.enabled && !this.embeddingFn) {
-            console.warn("Vector DB security feature is enabled, but no embedding function is available. Feature disabled.");
-            // Ensure the effective global config reflects this disablement
-            if(this.globalSecurityConfig.vectorDb) this.globalSecurityConfig.vectorDb.enabled = false;
+        // --- Vector DB: priorité à l'instance custom fournie ---
+        if (options.vectorDbInstance) {
+            this.vectorDb = options.vectorDbInstance;
+        } else {
+            // Initialize Vector DB only if enabled and embedding function is available
+            const vectorDbUserConfig = this.globalSecurityConfig.vectorDb;
+            if (vectorDbUserConfig?.enabled && this.embeddingFn) {
+                this.vectorDb = new VectorDatabase({
+                    ...vectorDbUserConfig,
+                    enabled: true, // Ensure enabled is explicitly true
+                    embeddingFunction: this.embeddingFn, // Provide the function
+                });
+            } else if (vectorDbUserConfig?.enabled && !this.embeddingFn) {
+                console.warn("Vector DB security feature is enabled, but no embedding function is available. Feature disabled.");
+                if(this.globalSecurityConfig.vectorDb) this.globalSecurityConfig.vectorDb.enabled = false;
+            }
         }
     }
 
