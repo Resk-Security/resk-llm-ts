@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { SecurityFeatureConfig } from "../index";
+import { AlertSystem, AlertConfig, AlertPayload } from './alert_system';
 
 // Simple prefix for easy detection (could be made more complex)
 const CANARY_TOKEN_PREFIX = "ctkn-";
@@ -8,6 +9,9 @@ export interface CanaryTokenConfig extends SecurityFeatureConfig {
     // Adding properties to fix empty interface error
     tokenPrefix?: string;
     includeContextInWarnings?: boolean;
+    alertConfig?: AlertConfig;
+    alertOnLeak?: boolean;
+    leakSeverity?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 interface TokenDetails {
@@ -19,12 +23,20 @@ interface TokenDetails {
 export class CanaryTokenManager {
     private config: CanaryTokenConfig;
     private activeTokens: Map<string, TokenDetails> = new Map(); // Store generated tokens
+    private alertSystem: AlertSystem | null = null;
 
     constructor(config?: CanaryTokenConfig) {
         this.config = {
             enabled: true,
+            alertOnLeak: true,
+            leakSeverity: 'high',
             ...(config || {}),
         };
+
+        // Initialiser le système d'alertes si configuré
+        if (this.config.alertConfig && this.config.alertOnLeak) {
+            this.alertSystem = new AlertSystem(this.config.alertConfig);
+        }
     }
 
     /**
@@ -67,9 +79,10 @@ export class CanaryTokenManager {
      * Checks a given text (e.g., a response) for any known active canary tokens.
      * @param text The text to check.
      * @param associatedTokens Optional list of specific tokens expected in this response.
+     * @param context Additional context for alerting.
      * @returns List of found token details.
      */
-    check_for_leaks(text: string, associatedTokens?: string[]): TokenDetails[] {
+    async check_for_leaks(text: string, associatedTokens?: string[], context?: Record<string, unknown>): Promise<TokenDetails[]> {
         if (!this.config.enabled || !text) {
             return [];
         }
@@ -84,13 +97,68 @@ export class CanaryTokenManager {
                 const details = this.activeTokens.get(token);
                 if (details) {
                     foundTokens.push(details);
+                    
+                    // Log local warning
                     console.warn(`Canary token leak detected: ${token}, Context: ${JSON.stringify(details.context)}`);
+                    
+                    // Send alert if configured
+                    if (this.alertSystem && this.config.alertOnLeak) {
+                        await this.sendLeakAlert(token, details, context);
+                    }
+                    
                     // Optionally remove the token from active list once detected
                     // this.activeTokens.delete(token);
                 }
             }
         }
         return foundTokens;
+    }
+
+    /**
+     * Sends an alert for a detected canary token leak
+     */
+    private async sendLeakAlert(token: string, details: TokenDetails, context?: Record<string, unknown>): Promise<void> {
+        if (!this.alertSystem) return;
+
+        const alertPayload: AlertPayload = {
+            id: `canary-leak-${randomUUID()}`,
+            timestamp: new Date().toISOString(),
+            type: 'canary_token_leak',
+            severity: this.config.leakSeverity || 'high',
+            title: 'Canary Token Leak Detected',
+            description: `A canary token has been detected in the response, indicating potential data leakage or prompt injection.`,
+            details: {
+                leakedToken: token.substring(0, 8) + '...', // Partial token for identification
+                tokenContext: details.context,
+                tokenTimestamp: new Date(details.timestamp).toISOString(),
+                detectionTimestamp: new Date().toISOString(),
+                responseContext: context
+            },
+            context: {
+                ...context,
+                tokenAge: Date.now() - details.timestamp
+            },
+            metadata: {
+                component: 'CanaryTokenManager',
+                version: '1.0.0'
+            }
+        };
+
+        try {
+            const results = await this.alertSystem.sendAlert(alertPayload);
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
+            
+            console.info(`[CanaryTokenManager] Alert sent to ${successCount}/${totalCount} channels`);
+            
+            // Log any failures
+            const failures = results.filter(r => !r.success);
+            if (failures.length > 0) {
+                console.error('[CanaryTokenManager] Some alerts failed:', failures);
+            }
+        } catch (error) {
+            console.error('[CanaryTokenManager] Failed to send leak alert:', error);
+        }
     }
 
     /**

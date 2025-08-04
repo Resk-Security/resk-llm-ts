@@ -346,7 +346,7 @@ describe('ReskLLMClient - Advanced Security', () => {
         await expect(client.chat.completions.create(params))
             .rejects
             .toThrow('Request blocked by security policy: Test heuristic block');
-        expect(mockHeuristicFilterMethod).toHaveBeenCalledWith('Trigger heuristic');
+        expect(mockHeuristicFilterMethod).toHaveBeenCalledWith('Trigger heuristic', { role: 'user' });
         expect(mockCreate).not.toHaveBeenCalled(); // Should not call OpenAI
     });
 
@@ -356,7 +356,7 @@ describe('ReskLLMClient - Advanced Security', () => {
             messages: [{ role: 'user', content: 'Safe prompt' }],
         };
         await client.chat.completions.create(params);
-        expect(mockHeuristicFilterMethod).toHaveBeenCalledWith('Safe prompt');
+        expect(mockHeuristicFilterMethod).toHaveBeenCalledWith('Safe prompt', { role: 'user' });
         expect(mockCreate).toHaveBeenCalledTimes(1);
     });
 
@@ -473,7 +473,11 @@ describe('ReskLLMClient - Advanced Security', () => {
             messages: [{ role: 'user', content: 'User prompt' }],
         };
         await client.chat.completions.create(params);
-        expect(mockCanaryCheck).toHaveBeenCalledWith('Safe response', ['ctkn-test']); // Mocked token
+        expect(mockCanaryCheck).toHaveBeenCalledWith('Safe response', ['ctkn-test'], expect.objectContaining({
+            model: 'test-model',
+            responseLength: expect.any(Number),
+            timestamp: expect.any(String)
+        })); // Mocked token
     });
 
     it('should allow disabling canary tokens via config', async () => {

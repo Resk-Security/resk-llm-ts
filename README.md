@@ -9,19 +9,69 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-^5.4.5-blue.svg)](https://www.typescriptlang.org/)
 [![LLM Security](https://img.shields.io/badge/LLM-Security-red)](https://github.com/Resk-Security/resk-llm-ts)
 
-`resk-llm-ts` is a security toolkit for Large Language Models (LLMs) in JavaScript/TypeScript environments. It wraps LLM API clients (initially supporting OpenAI/OpenRouter) to protect against prompt injections, data leakage, and other common security threats.
+`resk-llm-ts` is a **production-ready, enterprise-grade security toolkit** for Large Language Models (LLMs) in JavaScript/TypeScript environments. It provides comprehensive protection against prompt injections, data leakage, content moderation, and other LLM security threats with support for multiple providers including OpenAI, Anthropic, Cohere, and HuggingFace.
 
-## Features
+## 🚀 Production Ready Features
 
-The `ReskLLMClient` integrates several security modules:
+**✅ Multi-Provider Support** - OpenAI, Anthropic Claude, Cohere, HuggingFace  
+**✅ Advanced Content Moderation** - Toxic, violent, adult content detection with configurable actions  
+**✅ Multi-Level Injection Detection** - Basic to advanced prompt injection patterns with confidence scoring  
+**✅ Real-time Alert System** - Webhook, Slack, Email notifications for security incidents  
+**✅ Custom Heuristic Rules** - Industry-specific compliance rules (HIPAA, PCI-DSS, FERPA)  
+**✅ Vector Store Persistence** - Pinecone, Weaviate, ChromaDB support for pattern storage  
+**✅ Canary Token Protection** - Advanced data leak detection with alerting  
+**✅ Enterprise Configuration** - JSON-based config with environment-specific settings
 
--   🛡️ **Prompt Injection Detection**: Defends against attempts to manipulate model behavior using various techniques (basic checks, heuristic filters, vector DB comparison).
--   🔒 **Input Sanitization**: Scrubs user inputs to remove potentially harmful characters or scripts.
--   🔍 **PII Detection & Redaction**: Identifies and optionally removes Personally Identifiable Information (PII) based on configurable patterns.
--   🕵️ **Heuristic Filtering**: Blocks malicious prompts based on pattern matching before they reach the LLM.
--   📚 **Vector Database Similarity Search**: Compares prompts against a database of known attack patterns using semantic similarity (requires embedding function).
--   🔖 **Canary Tokens**: Detects potential data leaks by embedding unique identifiers in prompts and checking for them in responses.
--   📊 **Content Moderation (Placeholder)**: Basic configuration planned for future integration.
+## Core Security Features
+
+### 🛡️ **Advanced Prompt Injection Detection**
+- **Multi-level detection**: Basic, medium, and high-sophistication attack patterns
+- **Confidence scoring**: Weighted detection with configurable thresholds
+- **Technique categorization**: Direct override, encoding, jailbreak, social engineering, multilingual attacks
+- **Advanced patterns**: Token manipulation, prompt leaking, adversarial suffixes
+
+### 🚨 **Comprehensive Content Moderation**
+- **Multi-category filtering**: Toxic, adult, violence, self-harm, misinformation detection
+- **Configurable actions**: Block, warn, redact, or log violations
+- **Severity levels**: Low, medium, high with customizable thresholds
+- **Language support**: Multi-language content analysis
+- **Contextual analysis**: Message history consideration
+
+### 🔍 **Enhanced PII Protection**
+- **Real-time detection**: Email, phone, SSN, credit card, IP addresses
+- **Smart redaction**: Context-aware replacement strategies
+- **Custom patterns**: Industry-specific PII pattern definitions
+- **Compliance support**: GDPR, HIPAA, PCI-DSS aligned protection
+
+### 🎯 **Custom Heuristic Rules Engine**
+- **Industry profiles**: Healthcare, finance, education, government presets
+- **Rule prioritization**: Weighted scoring system with custom thresholds
+- **Contextual analysis**: Multi-message pattern detection
+- **Performance scoring**: Accumulative risk assessment
+
+### 📊 **Enterprise Vector Store Integration**
+- **Multiple backends**: Pinecone, Weaviate, ChromaDB support
+- **Persistent patterns**: Attack pattern storage and retrieval
+- **Similarity search**: Semantic matching with configurable thresholds
+- **Migration tools**: Cross-platform data migration utilities
+
+### 🔔 **Real-time Alert System**
+- **Multi-channel alerts**: Webhook, Slack, Email notifications
+- **Rate limiting**: Configurable alert throttling
+- **Severity-based routing**: Critical vs warning alert channels
+- **Retry mechanisms**: Reliable delivery with exponential backoff
+
+### 🌐 **Multi-Provider LLM Support**
+- **OpenAI/OpenRouter**: Native integration with full feature support
+- **Anthropic Claude**: High-security provider with constitutional AI
+- **Cohere**: Multilingual optimization and specialized embeddings
+- **HuggingFace**: Open-source model support and custom hosting
+
+### 🕵️ **Advanced Canary Token System**
+- **Intelligent insertion**: Context-aware token placement
+- **Leak detection**: Real-time response monitoring
+- **Alert integration**: Immediate notification on token exposure
+- **Token management**: Lifecycle tracking and revocation
 
 ## Use Cases
 
@@ -41,11 +91,215 @@ npm install resk-llm-ts
 yarn add resk-llm-ts
 ```
 
+## ⚠️ CRITICAL SECURITY WARNING - Frontend Usage
+
+**NEVER EXPOSE LLM API KEYS IN FRONTEND CODE!**
+
+When using this library in browser/frontend applications:
+
+❌ **DO NOT DO THIS:**
+```typescript
+// DANGEROUS - API keys exposed in browser
+const client = new ReskLLMClient({
+    openaiApiKey: 'sk-your-secret-key' // ❌ NEVER DO THIS
+});
+```
+
+✅ **DO THIS INSTEAD:**
+```typescript
+// ✅ SECURE - Frontend-only security filtering
+import { ReskSecurityFilter } from 'resk-llm-ts';
+
+const securityFilter = new ReskSecurityFilter({
+    inputSanitization: { enabled: true },
+    piiDetection: { enabled: true, redact: false, highlightOnly: true },
+    promptInjection: { enabled: true, level: 'basic', clientSideOnly: true },
+    contentModeration: { enabled: true, severity: 'medium' },
+    ui: { showWarnings: true, blockSubmission: false }
+});
+
+// Validate user input before sending to your backend
+const validation = await securityFilter.validateRequest(userRequest);
+if (validation.warnings.length > 0) {
+    // Show warnings to user, but don't block (backend will handle security)
+}
+
+// Send to YOUR SECURE BACKEND PROXY (not directly to LLM providers)
+const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${userToken}` }, // User auth, not LLM API key
+    body: JSON.stringify(userRequest)
+});
+```
+
+### Required Backend Architecture
+
+Your backend MUST implement a secure proxy:
+
+```typescript
+// backend/api/chat.ts - Secure LLM proxy
+import { ReskLLMClient } from 'resk-llm-ts';
+
+const reskClient = new ReskLLMClient({
+    openaiApiKey: process.env.OPENAI_API_KEY, // ✅ Secure server-side
+    securityConfig: {
+        promptInjection: { enabled: true, level: 'advanced' },
+        contentModeration: { enabled: true, severity: 'high' }
+    }
+});
+
+app.post('/api/chat', authenticateUser, async (req, res) => {
+    // ✅ Server-side security with full protection
+    const response = await reskClient.chat.completions.create(req.body);
+    res.json(response);
+});
+```
+
+**Frontend Security = UX Enhancement + Basic Filtering**  
+**Backend Security = Real Protection + API Key Management**
+
 ## Quick Start
 
-`resk-llm-ts` makes adding security layers to your LLM interactions straightforward. Get started by wrapping your existing OpenAI/OpenRouter client calls.
+`resk-llm-ts` makes adding enterprise-grade security to your LLM interactions straightforward. Get started by wrapping your existing LLM provider calls with comprehensive protection.
 
-Here's how to protect an OpenAI `chat.completions.create` call:
+### Basic Setup (OpenAI/OpenRouter)
+
+```typescript
+import { ReskLLMClient } from 'resk-llm-ts';
+
+const reskClient = new ReskLLMClient({
+    openRouterApiKey: process.env.OPENROUTER_API_KEY,
+    securityConfig: {
+        promptInjection: { enabled: true, level: 'advanced' },
+        contentModeration: { enabled: true, severity: 'medium' },
+        piiDetection: { enabled: true, redact: true },
+        canaryTokens: { enabled: true }
+    }
+});
+
+const response = await reskClient.chat.completions.create({
+    model: "openai/gpt-4o",
+    messages: [{ role: "user", content: "Your message here" }]
+});
+```
+
+### Multi-Provider Setup
+
+```typescript
+import { ReskLLMClient } from 'resk-llm-ts';
+
+// Anthropic Claude for high-security scenarios
+const claudeClient = new ReskLLMClient({
+    provider: 'anthropic',
+    providerConfig: {
+        apiKey: process.env.ANTHROPIC_API_KEY
+    },
+    securityConfig: {
+        promptInjection: { enabled: true, level: 'advanced' },
+        contentModeration: { 
+            enabled: true, 
+            severity: 'high',
+            actions: {
+                toxic: 'block',
+                violence: 'block',
+                selfHarm: 'block'
+            }
+        },
+        heuristicFilter: { 
+            enabled: true, 
+            industryProfile: 'healthcare' // HIPAA compliance
+        }
+    }
+});
+
+// Cohere for multilingual applications
+const cohereClient = new ReskLLMClient({
+    provider: 'cohere',
+    providerConfig: {
+        apiKey: process.env.COHERE_API_KEY
+    },
+    securityConfig: {
+        contentModeration: { 
+            enabled: true,
+            languageSupport: ['en', 'fr', 'es', 'de']
+        }
+    }
+});
+```
+
+### Enterprise Vector Store Setup
+
+```typescript
+import { ReskLLMClient } from 'resk-llm-ts';
+import { VectorStoreFactory } from 'resk-llm-ts/vector_stores';
+
+// Pinecone for production
+const vectorStore = VectorStoreFactory.createVectorStore({
+    type: 'pinecone',
+    connectionConfig: {
+        apiKey: process.env.PINECONE_API_KEY,
+        environment: 'us-east-1-aws'
+    },
+    embeddingFunction: async (text) => {
+        // Your embedding function
+        return embeddings;
+    },
+    indexName: 'security-patterns',
+    similarityThreshold: 0.85
+});
+
+const reskClient = new ReskLLMClient({
+    provider: 'openai',
+    providerConfig: { apiKey: process.env.OPENAI_API_KEY },
+    vectorDbInstance: vectorStore,
+    securityConfig: {
+        vectorDb: { enabled: true, similarityThreshold: 0.85 }
+    }
+});
+
+// Add attack patterns
+await reskClient.addAttackPattern("Ignore all previous instructions...");
+```
+
+### Alert System Configuration
+
+```typescript
+import { ReskLLMClient } from 'resk-llm-ts';
+
+const reskClient = new ReskLLMClient({
+    openRouterApiKey: process.env.OPENROUTER_API_KEY,
+    securityConfig: {
+        canaryTokens: {
+            enabled: true,
+            alertOnLeak: true,
+            leakSeverity: 'critical',
+            alertConfig: {
+                enabled: true,
+                channels: {
+                    slack: {
+                        enabled: true,
+                        webhookUrl: process.env.SLACK_WEBHOOK_URL,
+                        channel: '#security-alerts'
+                    },
+                    webhook: {
+                        enabled: true,
+                        url: 'https://your-security-endpoint.com/alerts',
+                        headers: {
+                            'Authorization': 'Bearer your-token'
+                        }
+                    }
+                },
+                rateLimiting: {
+                    maxAlertsPerMinute: 10,
+                    maxAlertsPerHour: 100
+                }
+            }
+        }
+    }
+});
+```
+
+### Legacy OpenAI Example
 
 ```typescript
 import { ReskLLMClient, SecurityException } from 'resk-llm-ts';
@@ -137,11 +391,41 @@ class SecurityException extends Error {
 
 ## Examples
 
-Explore various use cases and integration patterns in the `/examples` directory:
+Explore comprehensive use cases and integration patterns in the `/examples` directory:
 
-- [Basic Usage](examples/basic_usage.ts)
-- [Express Integration](examples/express_integration.ts)
-- [Vector DB Setup](examples/vector_db_setup.ts)
+### Basic Examples
+- [Basic Usage](examples/basic_usage.ts) - Simple integration with OpenAI/OpenRouter
+- [Express Integration](examples/express_integration.ts) - RESTful API security wrapper
+
+### Advanced Security Examples
+- [Advanced Security Usage](examples/advanced_security_usage.ts) - Complete security demonstration
+- [Multi-Provider Usage](examples/multi_provider_usage.ts) - OpenAI, Anthropic, Cohere, HuggingFace
+- [Vector Persistence Usage](examples/vector_persistence_usage.ts) - Pinecone, Weaviate, ChromaDB integration
+
+### Configuration Examples
+- [Vector DB Setup](examples/vector_db_setup.ts) - Vector database configuration
+- Industry-specific configurations (Healthcare, Finance, Education)
+- Enterprise deployment patterns
+
+### Frontend Security Examples
+- [Frontend Security Usage](examples/frontend_security_usage.ts) - Secure client-side filtering without API keys
+- Browser integration patterns with backend proxy
+- Real-time validation and user feedback
+
+### Production Examples
+```bash
+# Run advanced security demonstration
+npm run example:advanced-security
+
+# Test multi-provider support
+npm run example:multi-provider
+
+# Vector store integration demo  
+npm run example:vector-persistence
+
+# Frontend security demo (no API keys)
+npm run example:frontend-security
+```
 
 ## Advanced Security Features Configuration
 
@@ -268,6 +552,228 @@ const client = new ReskLLMClient({
 // Tokens are automatically inserted pre-call and checked post-call.
 // Leaks might result in warnings or SecurityExceptions depending on implementation.
 ```
+
+## Frontend vs Backend Security
+
+### 🌐 Frontend Security Features (Browser-Safe)
+
+The `ReskSecurityFilter` provides client-side security enhancements:
+
+```typescript
+import { ReskSecurityFilter } from 'resk-llm-ts';
+
+const frontendSecurity = new ReskSecurityFilter({
+    // Input validation and user feedback
+    inputSanitization: { enabled: true, sanitizeHtml: true },
+    piiDetection: { enabled: true, redact: false, highlightOnly: true },
+    promptInjection: { enabled: true, level: 'basic', clientSideOnly: true },
+    contentModeration: { enabled: true, severity: 'medium' },
+    
+    // Performance optimizations
+    caching: { enabled: true, maxSize: 500, ttl: 180000, strategy: 'lru' },
+    performance: { enableParallel: true, timeout: 3000 },
+    
+    // User experience
+    ui: {
+        showWarnings: true,        // Show security warnings to users
+        blockSubmission: false,    // Don't block client-side (backend handles)
+        highlightIssues: true,     // Visual feedback for problems
+        realTimeValidation: true   // Validate as user types
+    },
+    
+    // Optional SIEM integration
+    siem: {
+        enabled: true,
+        provider: 'webhook',
+        endpoint: '/api/security/events' // Your backend endpoint
+    }
+});
+
+// Validate before sending to backend
+const validation = await frontendSecurity.validateRequest(userRequest);
+if (validation.warnings.length > 0) {
+    showUserWarnings(validation.warnings);
+}
+```
+
+**Frontend Security Benefits:**
+- ✅ Immediate user feedback
+- ✅ Prevents accidental PII submission  
+- ✅ Improves user experience
+- ✅ Reduces backend load
+- ✅ No API key exposure risk
+
+**Frontend Security Limitations:**
+- ⚠️ Can be bypassed by malicious users
+- ⚠️ Not sufficient for production security
+- ⚠️ Requires backend validation as backup
+
+### 🔒 Backend Security Features (Production-Grade)
+
+The `ReskLLMClient` provides server-side protection:
+
+```typescript
+import { ReskLLMClient } from 'resk-llm-ts';
+
+const backendSecurity = new ReskLLMClient({
+    // Secure API key management
+    provider: 'openai',
+    providerConfig: {
+        apiKey: process.env.OPENAI_API_KEY // Server environment variables
+    },
+    
+    // Advanced security features
+    securityConfig: {
+        promptInjection: { enabled: true, level: 'advanced' },
+        contentModeration: { enabled: true, severity: 'high' },
+        vectorDb: { enabled: true, similarityThreshold: 0.85 },
+        canaryTokens: { enabled: true, alertOnLeak: true },
+        
+        // Enterprise features
+        heuristicFilter: { 
+            enabled: true, 
+            industryProfile: 'healthcare' // HIPAA compliance
+        }
+    },
+    
+    // Vector store for pattern persistence
+    vectorDbInstance: productionVectorStore
+});
+```
+
+**Backend Security Benefits:**
+- ✅ Cannot be bypassed
+- ✅ Secure API key management
+- ✅ Advanced threat detection
+- ✅ Compliance features
+- ✅ Persistent threat intelligence
+
+## Performance Optimization
+
+### 🚀 Automatic Performance Enhancements
+
+The library includes several performance optimizations:
+
+**Intelligent Caching:**
+```typescript
+const securityFilter = new ReskSecurityFilter({
+    caching: {
+        enabled: true,
+        maxSize: 1000,           // Cache up to 1000 validation results
+        ttl: 300000,             // 5-minute cache lifetime
+        strategy: 'lru',         // Least Recently Used eviction
+        compression: true,       // Compress cached data
+        persistToStorage: false  // Don't persist sensitive data
+    }
+});
+```
+
+**Parallel Processing:**
+```typescript
+const optimizer = new PerformanceOptimizer({
+    enableParallel: true,        // Run validations in parallel
+    maxConcurrent: 4,           // Limit concurrent operations
+    timeout: 5000,              // 5-second timeout per validation
+    batchSize: 10,              // Process in batches of 10
+    adaptiveThrottling: true    // Auto-adjust based on performance
+});
+```
+
+**Circuit Breaker Pattern:**
+```typescript
+// Automatically implemented to prevent cascade failures
+const validation = optimizer.createCircuitBreaker(
+    () => securityFilter.validateRequest(request),
+    5,      // Failure threshold
+    60000   // Reset timeout (1 minute)
+);
+```
+
+### 📊 Performance Monitoring
+
+Built-in metrics and monitoring:
+
+```typescript
+// Get performance statistics
+const stats = securityFilter.getPerformanceStats();
+console.log({
+    cacheHitRate: stats.cacheStats.hitRate,
+    averageProcessingTime: stats.averageProcessingTime,
+    totalValidations: stats.totalValidations,
+    throughput: stats.cacheStats.throughput
+});
+
+// SIEM integration for performance monitoring
+const siem = new SIEMIntegration({
+    enabled: true,
+    provider: 'datadog', // or 'splunk', 'elastic', etc.
+    filters: { includeMetrics: true }
+});
+```
+
+## SIEM Integration & Security Monitoring
+
+### 🔍 Enterprise Security Monitoring
+
+Integrate with your existing SIEM infrastructure:
+
+**Splunk Integration:**
+```typescript
+const siem = new SIEMIntegration({
+    enabled: true,
+    provider: 'splunk',
+    endpoint: 'https://your-splunk.com:8088/services/collector',
+    apiKey: process.env.SPLUNK_HEC_TOKEN,
+    indexName: 'resk-security-events'
+});
+```
+
+**Elasticsearch/ELK Stack:**
+```typescript
+const siem = new SIEMIntegration({
+    enabled: true,
+    provider: 'elastic',
+    endpoint: 'https://your-elastic.com:9200',
+    indexName: 'resk-security-logs',
+    apiKey: process.env.ELASTIC_API_KEY
+});
+```
+
+**Azure Sentinel:**
+```typescript
+const siem = new SIEMIntegration({
+    enabled: true,
+    provider: 'azure-sentinel',
+    endpoint: 'your-workspace-id',
+    apiKey: process.env.AZURE_LOG_ANALYTICS_KEY
+});
+```
+
+**Generic Webhook:**
+```typescript
+const siem = new SIEMIntegration({
+    enabled: true,
+    provider: 'webhook',
+    endpoint: 'https://your-security-endpoint.com/events',
+    apiKey: process.env.SECURITY_WEBHOOK_TOKEN
+});
+```
+
+### 📈 Automated Security Event Types
+
+The system automatically logs:
+
+- **Injection Attempts:** `injection_detected`
+- **Content Violations:** `content_blocked`
+- **PII Detection:** `pii_detected` 
+- **Performance Issues:** `performance_metric`
+- **System Anomalies:** `security_violation`
+
+Each event includes:
+- Severity level (low/medium/high/critical)
+- Confidence scores
+- User context (when available)
+- Compliance flags (GDPR, HIPAA, PCI-DSS)
 
 ## Production Configuration with config.json
 

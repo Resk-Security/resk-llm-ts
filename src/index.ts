@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { type ChatCompletionCreateParamsNonStreaming, type ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { LLMProvider, ProviderFactory, LLMCompletionRequest, LLMCompletionResponse, LLMProviderConfig } from './providers/llm_provider';
 // Import config types from types.ts
 import {
     type ReskSecurityConfig,
@@ -11,6 +12,7 @@ import {
     type HeuristicFilterConfig,
     type VectorDBConfig,
     type CanaryTokenConfig,
+    type ContentModerationConfig,
     type SecurityFeatureConfig,
     type IVectorDatabase
 } from './types';
@@ -20,12 +22,25 @@ import { PromptInjectionDetector } from './security/prompt_injection';
 import { HeuristicFilter } from './security/heuristic_filter';
 import { VectorDatabase } from './security/vector_db';
 import { CanaryTokenManager } from './security/canary_tokens';
+import { ContentModerator } from './security/content_moderation';
 import { defaultPiiPatterns } from './security/patterns/pii_patterns'; // Import PII pattern defaults
 
 // --- Configuration Interfaces are now in types.ts ---
 
 // Re-export specific configs from types.ts (optional, but can be convenient)
-export { PIIDetectionConfig, InputSanitizationConfig, PromptInjectionConfig, HeuristicFilterConfig, VectorDBConfig, CanaryTokenConfig, SecurityFeatureConfig, ReskSecurityConfig };
+export { PIIDetectionConfig, InputSanitizationConfig, PromptInjectionConfig, HeuristicFilterConfig, VectorDBConfig, CanaryTokenConfig, ContentModerationConfig, SecurityFeatureConfig, ReskSecurityConfig };
+
+// Re-export additional security interfaces
+export { CustomHeuristicRule, HeuristicFilterResult } from './security/heuristic_filter';
+export { InjectionDetectionResult } from './security/prompt_injection';
+export { ModerationResult } from './security/content_moderation';
+export { AlertConfig, AlertPayload, AlertResult } from './security/alert_system';
+
+// Re-export frontend security components
+export { ReskSecurityFilter, FrontendSecurityConfig, SecurityValidationResult, ProviderType, ProviderMessage, ProviderRequest, ProviderResponse } from './frontend/resk_security_filter';
+export { SecurityCache, CacheConfig } from './frontend/security_cache';
+export { PerformanceOptimizer, PerformanceConfig, PerformanceMetrics } from './frontend/performance_optimizer';
+export { SIEMIntegration, SIEMConfig, SecurityEvent, SIEMMetrics } from './frontend/siem_integration';
 
 // --- Helper Function for OpenAI Embeddings --- 
 
@@ -65,7 +80,7 @@ export type ReskChatCompletionCreateParams = Omit<ChatCompletionCreateParamsNonS
 
 
 export class ReskLLMClient {
-    private openai: OpenAI;
+    private llmProvider: LLMProvider;
     private globalSecurityConfig: ReskSecurityConfig;
     private embeddingFn: EmbeddingFunction | null = null;
 
@@ -76,35 +91,76 @@ export class ReskLLMClient {
     private heuristicFilter: HeuristicFilter;
     private vectorDb: IVectorDatabase | null = null; // Peut être custom ou interne
     private canaryTokenManager: CanaryTokenManager;
+    private contentModerator: ContentModerator;
 
     constructor(options: {
+        // Legacy OpenAI/OpenRouter support
         openRouterApiKey?: string;
         openRouterBaseUrl?: string;
         openaiClient?: OpenAI; // Allow passing an existing client
+        
+        // New multi-provider support
+        provider?: 'openai' | 'anthropic' | 'cohere' | 'huggingface';
+        providerConfig?: LLMProviderConfig;
+        llmProvider?: LLMProvider; // Allow direct provider injection
+        
+        // Security configuration
         securityConfig?: ReskSecurityConfig;
         embeddingFunction?: EmbeddingFunction; // Allow custom embedding function
         embeddingModel?: string; // Specify embedding model if using OpenAI
         vectorDbInstance?: IVectorDatabase; // Permettre l'injection d'une DB custom
     }) {
-        if (options.openaiClient) {
-            this.openai = options.openaiClient;
+        // --- Initialize LLM Provider ---
+        if (options.llmProvider) {
+            // Direct provider injection
+            this.llmProvider = options.llmProvider;
+        } else if (options.provider && options.providerConfig) {
+            // Multi-provider initialization
+            this.llmProvider = ProviderFactory.createProvider(
+                options.provider, 
+                options.providerConfig,
+                options.openaiClient
+            );
         } else {
-            const apiKey = options.openRouterApiKey || process.env.OPENROUTER_API_KEY;
-            if (!apiKey) {
-                throw new Error('OpenRouter API key or OpenAI client instance is required.');
+            // Legacy OpenAI/OpenRouter initialization (backward compatibility)
+            let openaiClient: OpenAI;
+            
+            if (options.openaiClient) {
+                openaiClient = options.openaiClient;
+            } else {
+                const apiKey = options.openRouterApiKey || process.env.OPENROUTER_API_KEY;
+                if (!apiKey) {
+                    throw new Error('OpenRouter API key or OpenAI client instance is required.');
+                }
+                openaiClient = new OpenAI({
+                    apiKey: apiKey,
+                    baseURL: options.openRouterBaseUrl || 'https://openrouter.ai/api/v1',
+                });
             }
-            this.openai = new OpenAI({
-                apiKey: apiKey,
-                baseURL: options.openRouterBaseUrl || 'https://openrouter.ai/api/v1',
-            });
+            
+            // Create OpenAI provider
+            this.llmProvider = ProviderFactory.createProvider('openai', {
+                apiKey: openaiClient.apiKey || '',
+                baseUrl: openaiClient.baseURL
+            }, openaiClient);
         }
 
         // --- Initialize Embedding Function --- 
         if (options.embeddingFunction) {
             this.embeddingFn = options.embeddingFunction;
+        } else if (this.llmProvider.generateEmbedding) {
+            // Use provider's embedding function if available
+            this.embeddingFn = async (text: string): Promise<number[]> => {
+                try {
+                    return await this.llmProvider.generateEmbedding!(text, options.embeddingModel);
+                } catch (error) {
+                    console.error(`Error getting embedding from ${this.llmProvider.getProviderName()}:`, error);
+                    throw new Error("Failed to generate embedding.");
+                }
+            };
         } else {
-            // Default to OpenAI embeddings if client is available
-            this.embeddingFn = createOpenAIEmbeddingFunction(this.openai, options.embeddingModel);
+            console.warn(`Provider ${this.llmProvider.getProviderName()} does not support embeddings. Vector DB features will be disabled.`);
+            this.embeddingFn = null;
         }
 
         // --- Initialize Security Modules --- 
@@ -116,6 +172,7 @@ export class ReskLLMClient {
         this.promptInjector = new PromptInjectionDetector(this.globalSecurityConfig.promptInjection);
         this.heuristicFilter = new HeuristicFilter(this.globalSecurityConfig.heuristicFilter);
         this.canaryTokenManager = new CanaryTokenManager(this.globalSecurityConfig.canaryTokens);
+        this.contentModerator = new ContentModerator(this.globalSecurityConfig.contentModeration);
 
         // --- Vector DB: priorité à l'instance custom fournie ---
         if (options.vectorDbInstance) {
@@ -146,7 +203,20 @@ export class ReskLLMClient {
             // Default VectorDB config (embedding function added later if needed)
             vectorDb: { enabled: true, similarityThreshold: 0.85 }, 
             canaryTokens: { enabled: true },
-            contentModeration: { enabled: false }, // Placeholder
+            contentModeration: { 
+                enabled: true, 
+                severity: 'medium',
+                actions: {
+                    toxic: 'block',
+                    adult: 'warn',
+                    violence: 'block',
+                    selfHarm: 'block',
+                    misinformation: 'warn'
+                },
+                customPatterns: [],
+                languageSupport: ['en', 'fr'],
+                contextAware: true
+            },
         };
 
         // Deep merge would be better for nested objects, but this is okay for now
@@ -205,22 +275,52 @@ export class ReskLLMClient {
             throw new Error(`Request blocked by security policy: ${blockReason}`);
         }
 
-        // 3. Prepare params for OpenAI, removing our custom config
-        const openAIParams: ChatCompletionCreateParamsNonStreaming = {
-            ...params,
-            messages: processedMessages,
+        // 3. Prepare params for LLM Provider, removing our custom config
+        const llmRequest: LLMCompletionRequest = {
+            model: params.model,
+            messages: processedMessages.map(msg => ({
+                role: msg.role as 'system' | 'user' | 'assistant',
+                content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+                ...((msg as any).name && { name: (msg as any).name })
+            })),
+            max_tokens: params.max_tokens || undefined,
+            temperature: params.temperature || undefined,
+            top_p: params.top_p || undefined,
+            frequency_penalty: params.frequency_penalty || undefined,
+            presence_penalty: params.presence_penalty || undefined,
+            stop: params.stop || undefined,
+            stream: false, // Security system doesn't support streaming yet
         };
-        
-        // A safer way to delete custom properties
-        const customOpenAIParams = openAIParams as Partial<ReskChatCompletionCreateParams>;
-        delete customOpenAIParams.securityConfig;
-        delete customOpenAIParams._processedSecurityInfo;
 
-        // 4. Call OpenRouter API
-        const completion = await this.openai.chat.completions.create(openAIParams);
+        // 4. Call LLM Provider API
+        const completion = await this.llmProvider.chatCompletion(llmRequest);
+        
+        // Convert back to OpenAI format for compatibility
+        const openAICompatibleCompletion: OpenAI.Chat.Completions.ChatCompletion = {
+            id: completion.id,
+            object: 'chat.completion' as const,
+            created: completion.created,
+            model: completion.model,
+            choices: completion.choices.map(choice => ({
+                index: choice.index,
+                message: {
+                    role: choice.message.role,
+                    content: choice.message.content,
+                    ...((choice.message as any).function_call && { function_call: (choice.message as any).function_call }),
+                    ...((choice.message as any).tool_calls && { tool_calls: (choice.message as any).tool_calls })
+                },
+                logprobs: null,
+                finish_reason: choice.finish_reason as any
+            })),
+            usage: completion.usage ? {
+                prompt_tokens: completion.usage.prompt_tokens,
+                completion_tokens: completion.usage.completion_tokens,
+                total_tokens: completion.usage.total_tokens
+            } : undefined
+        };
 
         // 5. Apply security checks POST-API Call
-        const finalCompletion = this.applyPostSecurityChecks(completion, requestConfig, securityInfo);
+        const finalCompletion = await this.applyPostSecurityChecks(openAICompatibleCompletion, requestConfig, securityInfo);
 
         return finalCompletion;
     }
@@ -264,20 +364,53 @@ export class ReskLLMClient {
              }
              const content = msg.content;
 
-            // 2. Heuristic Filter
+            // 2. Heuristic Filter with Custom Rules
             if (config.heuristicFilter.enabled) {
-                const heuristicResult = this.heuristicFilter.filter(content);
+                const heuristicResult = this.heuristicFilter.filter(content, { role: msg.role });
                 if (heuristicResult.detected) {
                     blockReason = heuristicResult.reason || "Blocked by heuristic filter";
+                    
+                                    // Log detailed heuristic analysis
+                if (heuristicResult.triggeredRules && heuristicResult.triggeredRules.length > 0) {
+                    console.warn(`[HeuristicFilter] Rules triggered:`, {
+                        rules: heuristicResult.triggeredRules.map(r => r.name),
+                        totalScore: heuristicResult.totalScore,
+                        recommendations: heuristicResult.recommendations
+                    });
+                }
+                    
                     break; // Block immediately
+                }
+                
+                // Log warnings for non-blocking rules
+                if (heuristicResult.triggeredRules && heuristicResult.triggeredRules.length > 0 && !heuristicResult.detected) {
+                    console.info(`[HeuristicFilter] Non-blocking rules triggered:`, {
+                        rules: heuristicResult.triggeredRules.map(r => r.name),
+                        score: heuristicResult.totalScore
+                    });
                 }
             }
 
-            // 3. Prompt Injection (Basic)
-            if (config.promptInjection.enabled && config.promptInjection.level === 'basic') {
-                if (this.promptInjector.detect(content)) {
-                    blockReason = "Potential prompt injection detected.";
-                    break; // Block immediately
+            // 3. Prompt Injection Detection (Multi-level)
+            if (config.promptInjection.enabled) {
+                const injectionResult = this.promptInjector.detectAdvanced(content);
+                if (injectionResult.detected) {
+                    // Décision de blocage basée sur la sévérité et la confiance
+                    const shouldBlock = injectionResult.severity === 'critical' || 
+                                       (injectionResult.severity === 'high' && injectionResult.confidence > 0.7) ||
+                                       (config.promptInjection.level === 'basic' && injectionResult.detected);
+                    
+                    if (shouldBlock) {
+                        blockReason = `Potential prompt injection detected.`;
+                        break; // Block immediately
+                    } else {
+                        // Log warning but continue
+                        console.warn(`[PromptInjection] Non-blocking detection:`, {
+                            severity: injectionResult.severity,
+                            confidence: injectionResult.confidence,
+                            techniques: injectionResult.techniques
+                        });
+                    }
                 }
             }
             
@@ -301,9 +434,36 @@ export class ReskLLMClient {
                 }
             }
 
-            // 6. Canary Token Insertion
+            // 6. Content Moderation Check
+            if (config.contentModeration.enabled && typeof currentMessages[i].content === 'string') {
+                const moderationResult = this.contentModerator.moderate(
+                    currentMessages[i].content as string,
+                    { role: msg.role, userId: 'unknown' } // Context for better moderation
+                );
+
+                // If content should be blocked, set block reason
+                if (moderationResult.blocked) {
+                    const violationCategories = moderationResult.violations
+                        .map(v => v.category)
+                        .join(', ');
+                    blockReason = `Content blocked by moderation policy: ${violationCategories}`;
+                    break;
+                }
+
+                // Apply content modifications if any (redaction, etc.)
+                if (moderationResult.processedContent && moderationResult.processedContent !== currentMessages[i].content) {
+                    currentMessages[i] = { ...currentMessages[i], content: moderationResult.processedContent };
+                }
+
+                // Log warnings
+                for (const warning of moderationResult.warnings) {
+                    console.warn(`[ContentModeration] ${warning}`);
+                }
+            }
+
+            // 7. Canary Token Insertion
             if (config.canaryTokens.enabled) {
-                 // Ensure msg.content is still a string after PII redaction
+                 // Ensure msg.content is still a string after PII redaction and moderation
                  if(typeof currentMessages[i].content === 'string') { 
                      const { modifiedText, token } = this.canaryTokenManager.insertToken(currentMessages[i].content as string);
                      // Important: Update the message in the array
@@ -317,11 +477,11 @@ export class ReskLLMClient {
         return { processedMessages: currentMessages, securityInfo, blockReason };
     }
 
-    private applyPostSecurityChecks(
+    private async applyPostSecurityChecks(
         completion: OpenAI.Chat.Completions.ChatCompletion, 
         config: Required<ReskSecurityConfig>, 
         securityInfo: ProcessedSecurityInfo
-    ): OpenAI.Chat.Completions.ChatCompletion {
+    ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
         let processedCompletion = completion;
         const responseContent = completion.choices[0]?.message?.content;
 
@@ -331,16 +491,53 @@ export class ReskLLMClient {
 
         // 1. Canary Token Leak Detection
         if (config.canaryTokens.enabled && securityInfo.canaryToken) {
-            this.canaryTokenManager.check_for_leaks(responseContent, [securityInfo.canaryToken]);
-            // Action on leak detected? Log, alert, modify response? TBD.
-            // If a leak is critical, you might modify the response:
-            // if (leaks.length > 0) { processedCompletion = ... // Modify completion }
+            const leaks = await this.canaryTokenManager.check_for_leaks(
+                responseContent, 
+                [securityInfo.canaryToken],
+                { 
+                    responseLength: responseContent.length,
+                    model: completion.model,
+                    timestamp: new Date().toISOString()
+                }
+            );
+            
+            // Log leak detection results
+            if (leaks.length > 0) {
+                console.warn(`[ReskLLMClient] ${leaks.length} canary token leak(s) detected in response`);
+                // Optionally modify response or take other actions based on leaks
+            }
         }
 
-        // 2. Content Moderation (Placeholder)
+        // 2. Content Moderation - Check response content
         if (config.contentModeration.enabled) {
-            console.warn('Content Moderation is not yet implemented.');
-            // Placeholder: Check responseContent for harmful content
+            const moderationResult = this.contentModerator.moderate(
+                responseContent,
+                { role: 'assistant', userId: 'llm_response' }
+            );
+
+            // Log any violations in the response
+            if (moderationResult.violations.length > 0) {
+                console.warn('[ContentModeration] Violations detected in LLM response:', {
+                    violations: moderationResult.violations.map(v => ({
+                        category: v.category,
+                        severity: v.severity,
+                        confidence: v.confidence
+                    })),
+                    blocked: moderationResult.blocked
+                });
+            }
+
+            // Apply content modifications to response if needed
+            if (moderationResult.processedContent && moderationResult.processedContent !== responseContent) {
+                if (processedCompletion.choices[0]?.message) {
+                    processedCompletion.choices[0].message.content = moderationResult.processedContent;
+                }
+            }
+
+            // Log warnings
+            for (const warning of moderationResult.warnings) {
+                console.warn(`[ContentModeration] Response: ${warning}`);
+            }
         }
 
         // 3. PII Detection (on output - redact if configured)

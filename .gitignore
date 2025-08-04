@@ -4,6 +4,9 @@ node_modules/
 # Build artifacts
 dist/
 
+# Test files
+test_lib_basic.js
+test_lib_basic.ts
 # Logs
 npm-debug.log*
 yarn-debug.log*

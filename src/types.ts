@@ -60,6 +60,9 @@ export interface HeuristicFilterConfig extends SecurityFeatureConfig {
     // Add properties to fix empty interface error
     customPatterns?: RegExp[];
     severity?: 'low' | 'medium' | 'high';
+    scoreThreshold?: number;
+    industryProfile?: 'general' | 'healthcare' | 'finance' | 'education' | 'government';
+    enableContextualAnalysis?: boolean;
 }
 
 /** Vector Database Configuration */
@@ -75,6 +78,25 @@ export interface CanaryTokenConfig extends SecurityFeatureConfig {
     includeContextInWarnings?: boolean;
 }
 
+/** Content Moderation Configuration */
+export interface ContentModerationConfig extends SecurityFeatureConfig {
+    severity?: 'low' | 'medium' | 'high';
+    actions?: {
+        toxic?: 'block' | 'warn' | 'redact' | 'log';
+        adult?: 'block' | 'warn' | 'redact' | 'log';
+        violence?: 'block' | 'warn' | 'redact' | 'log';
+        selfHarm?: 'block' | 'warn' | 'redact' | 'log';
+        misinformation?: 'block' | 'warn' | 'redact' | 'log';
+    };
+    customPatterns?: {
+        category: string;
+        patterns: RegExp[];
+        action: 'block' | 'warn' | 'redact' | 'log';
+    }[];
+    languageSupport?: string[];
+    contextAware?: boolean;
+}
+
 /** Main security configuration combining all features */
 export interface ReskSecurityConfig {
     inputSanitization?: InputSanitizationConfig;
@@ -83,7 +105,7 @@ export interface ReskSecurityConfig {
     heuristicFilter?: HeuristicFilterConfig;
     vectorDb?: Omit<VectorDBConfig, 'embeddingFunction'>; // Embedding fn managed by client
     canaryTokens?: CanaryTokenConfig;
-    contentModeration?: SecurityFeatureConfig; // Placeholder
+    contentModeration?: ContentModerationConfig; // Now fully implemented
 } 
 
 /**
