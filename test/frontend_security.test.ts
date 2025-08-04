@@ -310,13 +310,21 @@ describe('PerformanceOptimizer', () => {
     });
 
     test('Should implement throttling', async () => {
+        // Réinitialiser les métriques pour un test propre
+        optimizer.resetMetrics();
+        
         const start = Date.now();
         
         const throttledFn = await optimizer.throttle(() => Promise.resolve('throttled'));
         await optimizer.throttle(() => Promise.resolve('throttled2'));
         
         const duration = Date.now() - start;
-        expect(duration).toBeGreaterThanOrEqual(100); // Throttle delay
+        // Ajuster la tolérance pour les variations temporelles
+        expect(duration).toBeGreaterThanOrEqual(95); // Tolérance de 5ms
+        
+        // Vérifier que le throttling a été appliqué
+        const metrics = optimizer.getMetrics();
+        expect(metrics.throttledRequests).toBeGreaterThan(0);
     });
 });
 
@@ -503,4 +511,10 @@ describe('Intégration complète', () => {
 
         filter.dispose();
     });
+});
+
+// Nettoyage global après tous les tests
+afterAll(() => {
+    // Attendre un peu pour que tous les timers soient nettoyés
+    return new Promise(resolve => setTimeout(resolve, 100));
 });

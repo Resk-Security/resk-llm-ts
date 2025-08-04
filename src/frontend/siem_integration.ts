@@ -438,12 +438,23 @@ export class SIEMIntegration {
     }
 
     /**
-     * Démarrage du flush automatique
+     * Démarrage du timer de flush automatique
      */
     private startFlushInterval(): void {
-        this.flushInterval = setInterval(async () => {
-            await this.flush();
-        }, this.config.flushInterval);
+        if (this.config.flushInterval > 0) {
+            this.flushInterval = setInterval(() => {
+                if (!this.isDestroyed && this.eventQueue.length > 0) {
+                    this.flush().catch(error => {
+                        console.error('[SIEMIntegration] Auto-flush failed:', error);
+                    });
+                }
+            }, this.config.flushInterval);
+            
+            // Marquer le timer comme non-bloquant
+            if (this.flushInterval.unref) {
+                this.flushInterval.unref();
+            }
+        }
     }
 
     /**
@@ -581,6 +592,8 @@ export class SIEMIntegration {
      */
     private handleSendError(error: any, events: SecurityEvent[]): void {
         this.metrics.eventsFailed += events.length;
+        
+        // Enregistrer l'erreur
         this.metrics.errors.push({
             timestamp: Date.now(),
             error: error.message || String(error)
@@ -593,11 +606,18 @@ export class SIEMIntegration {
 
         console.error('[SIEMIntegration] Failed to send events:', error);
 
-        // Retry logic avec exponential backoff
-        if (this.config.retryPolicy.maxRetries > 0) {
-            setTimeout(() => {
-                this.retryEvents(events, 1);
+        // Retry logic avec exponential backoff (seulement si pas détruit)
+        if (!this.isDestroyed && this.config.retryPolicy.maxRetries > 0) {
+            const timeoutId = setTimeout(() => {
+                if (!this.isDestroyed) {
+                    this.retryEvents(events, 1);
+                }
             }, this.config.retryPolicy.retryDelay);
+            
+            // Marquer le timer comme non-bloquant
+            if (timeoutId.unref) {
+                timeoutId.unref();
+            }
         }
     }
 
@@ -605,8 +625,10 @@ export class SIEMIntegration {
      * Retry des événements
      */
     private async retryEvents(events: SecurityEvent[], attempt: number): Promise<void> {
-        if (attempt > this.config.retryPolicy.maxRetries) {
-            console.error('[SIEMIntegration] Max retries exceeded, dropping events');
+        if (this.isDestroyed || attempt > this.config.retryPolicy.maxRetries) {
+            if (attempt > this.config.retryPolicy.maxRetries) {
+                console.error('[SIEMIntegration] Max retries exceeded, dropping events');
+            }
             return;
         }
 
@@ -618,9 +640,16 @@ export class SIEMIntegration {
                 ? this.config.retryPolicy.retryDelay * Math.pow(2, attempt)
                 : this.config.retryPolicy.retryDelay;
 
-            setTimeout(() => {
-                this.retryEvents(events, attempt + 1);
+            const timeoutId = setTimeout(() => {
+                if (!this.isDestroyed) {
+                    this.retryEvents(events, attempt + 1);
+                }
             }, delay);
+            
+            // Marquer le timer comme non-bloquant
+            if (timeoutId.unref) {
+                timeoutId.unref();
+            }
         }
     }
 
@@ -653,18 +682,25 @@ export class SIEMIntegration {
     dispose(): void {
         this.isDestroyed = true;
         
+        // Nettoyer le timer de flush automatique
         if (this.flushInterval) {
             clearInterval(this.flushInterval);
             this.flushInterval = null;
         }
-
-        // Flush final des événements en attente
-        if (this.eventQueue.length > 0) {
-            this.flush().catch(error => {
-                console.error('[SIEMIntegration] Failed final flush:', error);
-            });
-        }
-
+        
+        // Vider la queue d'événements
+        this.eventQueue.length = 0;
+        
+        // Réinitialiser les métriques
+        this.metrics = {
+            eventsQueued: 0,
+            eventsSent: 0,
+            eventsFailed: 0,
+            lastSyncTime: 0,
+            averageLatency: 0,
+            errors: []
+        };
+        
         console.info('[SIEMIntegration] Disposed');
     }
 }

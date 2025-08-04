@@ -4,6 +4,14 @@ node_modules/
 # Build artifacts
 dist/
 
+# Package files
+*.tgz
+*.tar.gz
+*.zip
+*.tar
+*.tar.bz2
+*.tar.xz
+
 # Test files
 test_lib_basic.js
 test_lib_basic.ts

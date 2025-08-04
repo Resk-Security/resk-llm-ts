@@ -153,7 +153,7 @@ export class PerformanceOptimizer {
     }
 
     /**
-     * Throttling intelligent des requêtes
+     * Throttling pour limiter la fréquence d'exécution
      */
     async throttle<T>(fn: () => Promise<T>): Promise<T> {
         const now = Date.now();
@@ -343,6 +343,11 @@ export class PerformanceOptimizer {
         this.queueProcessorInterval = setInterval(() => {
             this.processQueue();
         }, 10); // Vérifier toutes les 10ms
+        
+        // Marquer le timer comme non-bloquant
+        if (this.queueProcessorInterval.unref) {
+            this.queueProcessorInterval.unref();
+        }
     }
 
     /**
@@ -374,7 +379,11 @@ export class PerformanceOptimizer {
                 if (this.running.size < this.config.maxConcurrent) {
                     resolve();
                 } else {
-                    setTimeout(checkSlot, 10);
+                    const timeoutId = setTimeout(checkSlot, 10);
+                    // Marquer le timer comme non-bloquant
+                    if (timeoutId.unref) {
+                        timeoutId.unref();
+                    }
                 }
             };
             checkSlot();
@@ -388,6 +397,11 @@ export class PerformanceOptimizer {
         this.adaptiveThrottlingInterval = setInterval(() => {
             this.adjustThrottling();
         }, 5000); // Ajuster toutes les 5 secondes
+        
+        // Marquer le timer comme non-bloquant
+        if (this.adaptiveThrottlingInterval.unref) {
+            this.adaptiveThrottlingInterval.unref();
+        }
     }
 
     /**
@@ -442,7 +456,13 @@ export class PerformanceOptimizer {
      * Utilitaire d'attente
      */
     private wait(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        return new Promise(resolve => {
+            const timeoutId = setTimeout(resolve, ms);
+            // Marquer le timer comme non-bloquant pour éviter les fuites
+            if (timeoutId.unref) {
+                timeoutId.unref();
+            }
+        });
     }
 
     /**
@@ -480,6 +500,7 @@ export class PerformanceOptimizer {
             throughput: 0
         };
         this.executionTimes = [];
+        this.lastExecution = 0; // Réinitialiser le timestamp de dernière exécution
     }
 
     /**
@@ -519,9 +540,15 @@ export class PerformanceOptimizer {
             this.adaptiveThrottlingInterval = null;
         }
         
+        // Nettoyer la queue et les tâches en cours
         this.queue.length = 0;
         this.running.clear();
         this.executionTimes.length = 0;
+        this.throttleQueue.length = 0;
+        
+        // Réinitialiser les métriques
+        this.resetMetrics();
+        
         console.debug('[PerformanceOptimizer] Disposed');
     }
 }
