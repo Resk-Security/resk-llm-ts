@@ -318,7 +318,7 @@ export class PerformanceOptimizer {
      * Exécution avec timeout
      */
     private async executeWithTimeout(task: ValidationTask): Promise<any> {
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const timeoutId = setTimeout(() => {
                 this.metrics.timeouts++;
                 reject(new Error(`Validation timeout after ${task.timeout}ms`));

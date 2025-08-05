@@ -31,9 +31,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Optional: Add Linting step here after configuring ESLint
-      # - name: Lint code
-      #   run: npm run lint # Assumes you have an "lint" script in package.json
+      - name: Lint code
+        run: npm run lint
 
       - name: Type check with TypeScript
         run: npx tsc --noEmit
@@ -61,19 +60,31 @@ jobs:
         run: npm ci 
 
       - name: Build
-        run: npm run build
+        run: npm run build:prod
 
-      # Optional: Verify package contents (useful for complex builds)
-      # - name: Verify package contents
-      #  run: npm pack --dry-run
+      - name: Create package
+        run: npm pack
+
+      - name: Verify package contents
+        run: npm pack --dry-run
 
       - name: Publish package to npmjs
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Use npm token secret
 
+      - name: Get package info
+        id: package
+        run: |
+          echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/* # Attach files from the build output directory
-          generate_release_notes: true # Automatically generate release notes from commits 
+          files: |
+            dist/*
+            ${{ steps.package.outputs.name }}-${{ steps.package.outputs.version }}.tgz
+          generate_release_notes: true
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }} 

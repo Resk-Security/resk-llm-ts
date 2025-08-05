@@ -18,7 +18,7 @@ export const obfuscatedEmailPatterns: RegExp[] = [
     // Bracket obfuscation: test[@]example[.]com
     /\b[A-Za-z0-9._%+-]+\[@\][A-Za-z0-9.-]+\[\.\][A-Za-z]{2,}\b/g,
     // Mixed bracket obfuscation
-    /\b[A-Za-z0-9._%+-]+\[?\@\]?[A-Za-z0-9.-]+\[?\.\]?[A-Za-z0-9]{2,}\b/g,
+    /\b[A-Za-z0-9._%+-]+[?@]?[A-Za-z0-9.-]+[?.]?[A-Za-z0-9]{2,}\b/g,
     // Word substitution: test AT example DOT com
     /\b[A-Za-z0-9._%+-]+\s+(?:at|AT|At)\s+[A-Za-z0-9.-]+\s+(?:dot|DOT|Dot)\s+[A-Za-z]{2,}\b/g,
     // Character substitution (0 for o, etc.)

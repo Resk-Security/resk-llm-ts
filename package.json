@@ -6,6 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "test": "jest",
     "lint": "eslint src/**/*.ts test/**/*.ts",
     "example:basic": "ts-node examples/basic_usage.ts",
     "example:express": "ts-node examples/express_integration.ts",
@@ -16,7 +17,8 @@
     "example:vector-persistence": "ts-node examples/vector_persistence_usage.ts",
     "test:frontend": "jest test/frontend_security.test.ts",
     "test:all": "jest --coverage",
-    "build:prod": "tsc --project tsconfig.json && npm run lint"
+    "build:prod": "tsc --project tsconfig.json && npm run lint",
+    "prepublishOnly": "npm run build:prod && npm test"
   },
   "repository": {
     "type": "git",

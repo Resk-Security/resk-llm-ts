@@ -37,10 +37,10 @@ export const obfuscatedUrlPatterns: RegExp[] = [
   /hxx[pt]s?:\/\/[\w.-]+\//i,
   
   // Mixed bracket and character substitution
-  /h\[?[tx]{2,}\]?ps?:\/\/[\w\[\].-]+\//i,
+  /h[?[tx]{2,}]?ps?:\/\/[\w[\].-]+\//i,
   
   // URL with excessive obfuscation
-  /(?:h\[?t{2,}\]?p\[?s?\]?|hxx[pt]s?):\/\/[\w\[\].-]+\//i,
+  /(?:h[?t{2,}]?p[?s?]?|hxx[pt]s?):\/\/[\w[\].-]+\//i,
   
   // Space separation: http ://bit .ly/malicious  
   /h\s*t{2,}\s*p\s*s?\s*:\s*\/\s*\/\s*[\w\s.-]+\//i,
