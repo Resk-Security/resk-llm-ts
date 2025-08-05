@@ -194,7 +194,6 @@ export class SecurityCache {
      * Nettoyage des entrées expirées
      */
     private cleanup(): void {
-        const now = Date.now();
         let cleaned = 0;
 
         for (const [key, entry] of this.cache.entries()) {

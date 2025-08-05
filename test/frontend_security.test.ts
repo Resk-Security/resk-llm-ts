@@ -157,28 +157,6 @@ describe('ReskSecurityFilter Frontend', () => {
     });
 
     describe('Contraintes de sécurité', () => {
-        test('Should validate security constraints on initialization', () => {
-            // Mock de l'environnement avec clé API dangereuse
-            const originalLocalStorage = global.localStorage;
-            global.localStorage = {
-                getItem: jest.fn().mockImplementation((key) => {
-                    if (key === 'OPENAI_API_KEY') return 'sk-dangerous-key';
-                    return null;
-                }),
-                setItem: jest.fn(),
-                removeItem: jest.fn(),
-                clear: jest.fn(),
-                length: 0,
-                key: jest.fn()
-            } as any;
-
-            expect(() => {
-                new ReskSecurityFilter();
-            }).toThrow('Security violation: API key detected in frontend environment');
-
-            global.localStorage = originalLocalStorage;
-        });
-
         test('Should not expose API keys in configuration', () => {
             const config = {
                 // Tentative d'injection de clé API
@@ -315,7 +293,7 @@ describe('PerformanceOptimizer', () => {
         
         const start = Date.now();
         
-        const throttledFn = await optimizer.throttle(() => Promise.resolve('throttled'));
+        await optimizer.throttle(() => Promise.resolve('throttled'));
         await optimizer.throttle(() => Promise.resolve('throttled2'));
         
         const duration = Date.now() - start;
@@ -510,6 +488,35 @@ describe('Intégration complète', () => {
         expect(stats.cacheStats.hitRate).toBeGreaterThanOrEqual(0);
 
         filter.dispose();
+    });
+});
+
+// Test isolé pour les contraintes de sécurité (séparé du beforeEach global)
+describe('Security Constraints Validation - Isolated', () => {
+    test('Should validate security constraints on initialization', () => {
+        // Sauvegarder l'environnement original
+        const originalLocalStorage = global.localStorage;
+        
+        // Mock de l'environnement avec clé API dangereuse
+        global.localStorage = {
+            getItem: jest.fn().mockImplementation((key) => {
+                if (key === 'OPENAI_API_KEY') return 'sk-dangerous-key';
+                return null;
+            }),
+            setItem: jest.fn(),
+            removeItem: jest.fn(),
+            clear: jest.fn(),
+            length: 0,
+            key: jest.fn()
+        } as any;
+
+        // Test que l'exception est bien levée
+        expect(() => {
+            new ReskSecurityFilter();
+        }).toThrow('Security violation: API key detected in frontend environment');
+
+        // Restaurer l'environnement original
+        global.localStorage = originalLocalStorage;
     });
 });
 

@@ -84,7 +84,7 @@ app.post('/api/chat', async (req, res) => {
     // Handle other API errors
     return res.status(500).json({ 
       error: 'Error processing request',
-      details: error.message
+      details: error?.message || 'Unknown error'
     });
   }
 });

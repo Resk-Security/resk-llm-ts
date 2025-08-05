@@ -84,9 +84,6 @@ export class PineconeVectorStore extends VectorStore {
         try {
             // Dynamic import to avoid mandatory dependency
             throw new Error('Pinecone integration requires @pinecone-database/pinecone package. Run: npm install @pinecone-database/pinecone');
-
-            this.index = this.client.Index(this.config.indexName!);
-            console.info(`[Pinecone] Connected to index: ${this.config.indexName}`);
         } catch (error) {
             throw new Error(`Failed to connect to Pinecone: ${error}`);
         }
@@ -156,11 +153,9 @@ export class PineconeVectorStore extends VectorStore {
     }
 
     searchSimilarVector(queryVector: number[], k: number = 3, threshold?: number): SimilarityResult {
-        const currentThreshold = threshold ?? this.similarityThreshold;
-        
         try {
             // Pinecone query (promesse mais on doit gérer sync/async)
-            const queryPromise = this.index.query({
+            this.index.query({
                 vector: queryVector,
                 topK: k,
                 includeMetadata: true,
@@ -233,8 +228,6 @@ export class WeaviateVectorStore extends VectorStore {
         try {
             // Dynamic import to avoid mandatory dependency
             throw new Error('Weaviate integration requires weaviate-ts-client package. Run: npm install weaviate-ts-client');
-
-            console.info(`[Weaviate] Connected to ${this.config.connectionConfig.host}`);
         } catch (error) {
             throw new Error(`Failed to connect to Weaviate: ${error}`);
         }
@@ -377,24 +370,7 @@ export class ChromaDBVectorStore extends VectorStore {
 
         try {
             // Dynamic import to avoid mandatory dependency
-                        throw new Error('ChromaDB integration requires chromadb package. Run: npm install chromadb');
-            
-            const collectionName = this.config.collectionName || 'security_patterns';
-            
-            // Obtenir ou créer la collection
-            try {
-                this.collection = await this.client.getCollection({
-                    name: collectionName
-                });
-            } catch (error) {
-                // Collection n'existe pas, la créer
-                this.collection = await this.client.createCollection({
-                    name: collectionName,
-                    metadata: { description: 'Resk LLM security patterns' }
-                });
-            }
-
-            console.info(`[ChromaDB] Connected to collection: ${collectionName}`);
+            throw new Error('ChromaDB integration requires chromadb package. Run: npm install chromadb');
         } catch (error) {
             throw new Error(`Failed to connect to ChromaDB: ${error}`);
         }

@@ -1,8 +1,9 @@
 import OpenAI from 'openai';
 import { type ChatCompletionCreateParamsNonStreaming, type ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-import { LLMProvider, ProviderFactory, LLMCompletionRequest, LLMCompletionResponse, LLMProviderConfig } from './providers/llm_provider';
+import { LLMProvider, ProviderFactory, LLMCompletionRequest, LLMProviderConfig } from './providers/llm_provider';
 // Import config types from types.ts
 import {
+    SecurityException,
     type ReskSecurityConfig,
     type EmbeddingFunction,
     type SimilarityResult,
@@ -28,7 +29,7 @@ import { defaultPiiPatterns } from './security/patterns/pii_patterns'; // Import
 // --- Configuration Interfaces are now in types.ts ---
 
 // Re-export specific configs from types.ts (optional, but can be convenient)
-export { PIIDetectionConfig, InputSanitizationConfig, PromptInjectionConfig, HeuristicFilterConfig, VectorDBConfig, CanaryTokenConfig, ContentModerationConfig, SecurityFeatureConfig, ReskSecurityConfig };
+export { SecurityException, PIIDetectionConfig, InputSanitizationConfig, PromptInjectionConfig, HeuristicFilterConfig, VectorDBConfig, CanaryTokenConfig, ContentModerationConfig, SecurityFeatureConfig, ReskSecurityConfig };
 
 // Re-export additional security interfaces
 export { CustomHeuristicRule, HeuristicFilterResult } from './security/heuristic_filter';
@@ -42,25 +43,7 @@ export { SecurityCache, CacheConfig } from './frontend/security_cache';
 export { PerformanceOptimizer, PerformanceConfig, PerformanceMetrics } from './frontend/performance_optimizer';
 export { SIEMIntegration, SIEMConfig, SecurityEvent, SIEMMetrics } from './frontend/siem_integration';
 
-// --- Helper Function for OpenAI Embeddings --- 
-
-/**
- * Creates an embedding function using the provided OpenAI client.
- */
-function createOpenAIEmbeddingFunction(client: OpenAI, model: string = "text-embedding-3-small"): EmbeddingFunction {
-    return async (text: string): Promise<number[]> => {
-        try {
-            const response = await client.embeddings.create({
-                input: text,
-                model: model,
-            });
-            return response.data[0].embedding;
-        } catch (error) {
-            console.error("Error getting OpenAI embedding:", error);
-            throw new Error("Failed to generate embedding."); // Re-throw for handling
-        }
-    };
-}
+// --- Helper Function for OpenAI Embeddings ---
 
 // --- Augmented Request Type & Main Client --- 
 

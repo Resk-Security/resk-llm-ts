@@ -185,7 +185,7 @@ describe('ReskLLMClient', () => {
         };
         await client.chat.completions.create(params);
         expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-            messages: [{ role: 'user', content: '[removed]Hello' }],
+            messages: [{ role: 'user', content: 'Hello' }],
         }));
     });
 

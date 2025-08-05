@@ -1,5 +1,4 @@
-import { ReskLLMClient, SecurityException } from '../src/index';
-import { ProviderFactory, LLMProviderConfig } from '../src/providers/llm_provider';
+import { ReskLLMClient } from '../src/index';
 
 /**
  * Exemple d'utilisation multi-providers avec le système de sécurité

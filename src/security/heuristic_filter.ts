@@ -238,11 +238,32 @@ export class HeuristicFilter {
      * Legacy pattern matching (backward compatibility)
      */
     private checkLegacyPatterns(text: string): { detected: boolean; reason: string | null } {
+        // Limit text length to prevent ReDoS attacks
+        const maxTextLength = 10000;
+        const testText = text.length > maxTextLength ? text.substring(0, maxTextLength) : text;
+        
         for (const pattern of this.patterns) {
-            pattern.lastIndex = 0; // Reset state for global regex
-            if (pattern.test(text)) {
-                const reason = `Matched legacy heuristic pattern: ${pattern.toString()}`;
-                return { detected: true, reason };
+            try {
+                pattern.lastIndex = 0; // Reset state for global regex
+                
+                // Add timeout protection for regex execution
+                const startTime = Date.now();
+                const result = pattern.test(testText);
+                const executionTime = Date.now() - startTime;
+                
+                // If regex takes too long, skip it and log warning
+                if (executionTime > 100) { // 100ms timeout
+                    console.warn(`[HeuristicFilter] Slow regex detected: ${pattern.toString()}, execution time: ${executionTime}ms`);
+                    continue;
+                }
+                
+                if (result) {
+                    const reason = `Matched legacy heuristic pattern: ${pattern.toString()}`;
+                    return { detected: true, reason };
+                }
+            } catch (error) {
+                console.error(`[HeuristicFilter] Regex error for pattern ${pattern.toString()}:`, error);
+                continue;
             }
         }
         return { detected: false, reason: null };
@@ -277,11 +298,31 @@ export class HeuristicFilter {
 
             // Check regex patterns
             if (conditions.patterns) {
+                const maxTextLength = 10000;
+                const testText = text.length > maxTextLength ? text.substring(0, maxTextLength) : text;
+                
                 for (const pattern of conditions.patterns) {
-                    pattern.lastIndex = 0;
-                    if (pattern.test(text)) {
-                        ruleMatched = true;
-                        break;
+                    try {
+                        pattern.lastIndex = 0;
+                        
+                        // Add timeout protection for regex execution
+                        const startTime = Date.now();
+                        const result = pattern.test(testText);
+                        const executionTime = Date.now() - startTime;
+                        
+                        // If regex takes too long, skip it and log warning
+                        if (executionTime > 100) { // 100ms timeout
+                            console.warn(`[HeuristicFilter] Slow custom rule regex detected: ${pattern.toString()}, execution time: ${executionTime}ms`);
+                            continue;
+                        }
+                        
+                        if (result) {
+                            ruleMatched = true;
+                            break;
+                        }
+                    } catch (error) {
+                        console.error(`[HeuristicFilter] Custom rule regex error for pattern ${pattern.toString()}:`, error);
+                        continue;
                     }
                 }
             }

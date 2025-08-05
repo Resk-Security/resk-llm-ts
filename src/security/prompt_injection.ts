@@ -1,5 +1,6 @@
 import { type PromptInjectionConfig } from "../types";
-import { defaultInjectionPatterns } from "./patterns/llm_injection_patterns"; // Import from patterns
+
+import { TextNormalizer } from "./text_normalizer";
 
 export interface InjectionDetectionResult {
     detected: boolean;
@@ -12,6 +13,7 @@ export interface InjectionDetectionResult {
 
 export class PromptInjectionDetector {
     private config: PromptInjectionConfig;
+    private textNormalizer: TextNormalizer;
     
     // Patterns organisés par niveau de sévérité et technique
     private readonly injectionPatterns = {
@@ -99,7 +101,7 @@ export class PromptInjectionDetector {
             /\bdescribing\.\+\\+\bdescriptive\b/gi
         ],
         payloadInjection: [
-            /<script[\s\S]*?<\/script>/gi,
+            /<script\b[^>]*>[\s\S]*?<\/script[\s>]/gi,
             /javascript\s*:\s*/gi,
             /(?:on\w+\s*=|href\s*=\s*["']?javascript)/gi
         ]
@@ -111,6 +113,16 @@ export class PromptInjectionDetector {
             level: 'basic',
             ...(config || {}),
         };
+        
+        // Initialize text normalizer for better pattern matching
+        this.textNormalizer = new TextNormalizer({
+            enabled: true,
+            normalizeUnicode: true,
+            normalizeSpacing: true,
+            normalizeCase: true,
+            normalizeObfuscation: true,
+            normalizeHomoglyphs: true,
+        });
     }
 
     /**
@@ -183,27 +195,56 @@ export class PromptInjectionDetector {
     private analyzeLevel(text: string, level: 'low' | 'medium' | 'high', result: InjectionDetectionResult): void {
         const levelPatterns = this.injectionPatterns[level];
         
+        // Limit text length to prevent ReDoS attacks
+        const maxTextLength = 10000;
+        const testText = text.length > maxTextLength ? text.substring(0, maxTextLength) : text;
+        
         for (const [technique, patterns] of Object.entries(levelPatterns)) {
             for (const pattern of patterns) {
-                pattern.lastIndex = 0; // Reset regex state
-                const matches = text.match(pattern);
-                
-                if (matches) {
-                    result.detected = true;
-                    result.matchedPatterns.push(pattern.toString());
-                    result.techniques.push(`${level}_${technique}`);
+                try {
+                    pattern.lastIndex = 0; // Reset regex state
                     
-                    // Pondération selon le niveau
-                    const levelWeight = level === 'high' ? 0.8 : level === 'medium' ? 0.6 : 0.4;
-                    const matchWeight = Math.min(matches.length * 0.1, 0.3);
-                    result.confidence += levelWeight + matchWeight;
+                    // Add timeout protection for regex execution
+                    const startTime = Date.now();
                     
-                    // Mise à jour du niveau de détection le plus élevé
-                    if (level === 'high' && result.detectionLevel !== 'high') {
-                        result.detectionLevel = 'high';
-                    } else if (level === 'medium' && result.detectionLevel === 'low') {
-                        result.detectionLevel = 'medium';
+                    // Use text normalizer for enhanced detection
+                    const matchesOriginal = testText.match(pattern);
+                    const matchesNormalized = this.textNormalizer.testPattern(testText, pattern);
+                    const matches = matchesOriginal || matchesNormalized;
+                    
+                    const executionTime = Date.now() - startTime;
+                    
+                    // If regex takes too long, skip it and log warning
+                    if (executionTime > 100) { // 100ms timeout
+                        console.warn(`[PromptInjection] Slow regex detected: ${pattern.toString()}, execution time: ${executionTime}ms`);
+                        continue;
                     }
+                    
+                    if (matches || matchesNormalized) {
+                        result.detected = true;
+                        result.matchedPatterns.push(pattern.toString());
+                        result.techniques.push(`${level}_${technique}`);
+                        
+                        // Pondération selon le niveau
+                        const levelWeight = level === 'high' ? 0.8 : level === 'medium' ? 0.6 : 0.4;
+                        const matchWeight = matchesNormalized ? 0.2 : (matchesOriginal && Array.isArray(matchesOriginal) ? Math.min(matchesOriginal.length * 0.1, 0.3) : 0.1);
+                        result.confidence += levelWeight + matchWeight;
+                        
+                        // Mise à jour du niveau de détection le plus élevé
+                        if (level === 'high' && result.detectionLevel !== 'high') {
+                            result.detectionLevel = 'high';
+                        } else if (level === 'medium' && result.detectionLevel === 'low') {
+                            result.detectionLevel = 'medium';
+                        }
+                        
+                        // Log if detection was via normalization
+                        if (matchesNormalized && !matchesOriginal) {
+                            console.info(`[PromptInjection] Obfuscated pattern detected via normalization: ${technique}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`[PromptInjection] Regex error for pattern ${pattern.toString()}:`, error);
+                    continue;
                 }
             }
         }
@@ -213,17 +254,36 @@ export class PromptInjectionDetector {
      * Analyse des techniques avancées spécialisées
      */
     private analyzeAdvancedTechniques(text: string, result: InjectionDetectionResult): void {
+        // Limit text length to prevent ReDoS attacks
+        const maxTextLength = 10000;
+        const testText = text.length > maxTextLength ? text.substring(0, maxTextLength) : text;
+        
         for (const [technique, patterns] of Object.entries(this.advancedTechniques)) {
             for (const pattern of patterns) {
-                pattern.lastIndex = 0;
-                const matches = text.match(pattern);
-                
-                if (matches) {
-                    result.detected = true;
-                    result.matchedPatterns.push(pattern.toString());
-                    result.techniques.push(`advanced_${technique}`);
-                    result.confidence += 0.7; // Techniques avancées = haute confiance
-                    result.detectionLevel = 'high';
+                try {
+                    pattern.lastIndex = 0;
+                    
+                    // Add timeout protection for regex execution
+                    const startTime = Date.now();
+                    const matches = testText.match(pattern);
+                    const executionTime = Date.now() - startTime;
+                    
+                    // If regex takes too long, skip it and log warning
+                    if (executionTime > 100) { // 100ms timeout
+                        console.warn(`[PromptInjection] Slow advanced technique regex detected: ${pattern.toString()}, execution time: ${executionTime}ms`);
+                        continue;
+                    }
+                    
+                    if (matches) {
+                        result.detected = true;
+                        result.matchedPatterns.push(pattern.toString());
+                        result.techniques.push(`advanced_${technique}`);
+                        result.confidence += 0.7; // Techniques avancées = haute confiance
+                        result.detectionLevel = 'high';
+                    }
+                } catch (error) {
+                    console.error(`[PromptInjection] Advanced technique regex error for pattern ${pattern.toString()}:`, error);
+                    continue;
                 }
             }
         }

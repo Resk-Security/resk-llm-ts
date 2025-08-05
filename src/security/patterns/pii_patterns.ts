@@ -8,14 +8,48 @@
 // Re-exporting the default PII patterns from the main protector module for now
 // Ideally, populate this file with more granular patterns as needed.
 
-// Make sure this matches test@example.com used in tests
+// Enhanced email patterns (includes obfuscation variants)
 export const emailPattern: RegExp = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
-// Basic North American phone number patterns
+// Obfuscated email patterns
+export const obfuscatedEmailPatterns: RegExp[] = [
+    // Standard email
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
+    // Bracket obfuscation: test[@]example[.]com
+    /\b[A-Za-z0-9._%+-]+\[@\][A-Za-z0-9.-]+\[\.\][A-Za-z]{2,}\b/g,
+    // Mixed bracket obfuscation
+    /\b[A-Za-z0-9._%+-]+\[?\@\]?[A-Za-z0-9.-]+\[?\.\]?[A-Za-z0-9]{2,}\b/g,
+    // Word substitution: test AT example DOT com
+    /\b[A-Za-z0-9._%+-]+\s+(?:at|AT|At)\s+[A-Za-z0-9.-]+\s+(?:dot|DOT|Dot)\s+[A-Za-z]{2,}\b/g,
+    // Character substitution (0 for o, etc.)
+    /\b[A-Za-z0-9._%+-]+[@＠][A-Za-z0-9.-]*[0o][A-Za-z0-9.-]*\.[A-Za-z0-9]{2,}\b/g,
+];
+
+// Enhanced phone patterns (including obfuscated variants)
 export const phonePatternNA: RegExp = /\b(?:\+?1[ -.]?)?[(]?\d{3}[)]?[ -.]?\d{3}[ -.]?\d{4}\b/g;
 
-// Basic Credit Card number patterns (does not perform Luhn check)
+export const obfuscatedPhonePatterns: RegExp[] = [
+    // Standard phone
+    /\b(?:\+?1[ -.]?)?[(]?\d{3}[)]?[ -.]?\d{3}[ -.]?\d{4}\b/g,
+    // With excessive spaces or symbols
+    /\b(?:\+?1[\s.-]?)?[\(\[]?\d{3}[\)\]]?[\s.-]?\d{3}[\s.-]?\d{4}\b/g,
+    // Dot/word separation: 555 DOT 123 DOT 4567
+    /\b\d{3}[\s.]*(?:dot|DOT)[\s.]*\d{3}[\s.]*(?:dot|DOT)[\s.]*\d{4}\b/g,
+];
+
+// Enhanced credit card patterns
 export const creditCardPattern: RegExp = /\b(?:\d{4}[ -]?){3}\d{4}\b/g;
+
+export const obfuscatedCreditCardPatterns: RegExp[] = [
+    // Standard format
+    /\b(?:\d{4}[ -]?){3}\d{4}\b/g,
+    // With asterisks: 1234 **** **** 5678
+    /\b\d{4}[\s*-]*\*{4}[\s*-]*\*{4}[\s*-]*\d{4}\b/g,
+    // With X's: 1234 XXXX XXXX 5678
+    /\b\d{4}[\sX-]*X{4}[\sX-]*X{4}[\sX-]*\d{4}\b/g,
+    // Mixed obfuscation
+    /\b\d{4}[\s*X-]{1,4}[\*X]{4}[\s*X-]{1,4}[\*X]{4}[\s*X-]{1,4}\d{4}\b/g,
+];
 
 // Basic IPv4 Address pattern
 export const ipAddressV4Pattern: RegExp = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
@@ -30,6 +64,10 @@ export const defaultPiiPatterns: RegExp[] = [
     phonePatternNA,
     creditCardPattern,
     ipAddressV4Pattern,
+    // Include obfuscated patterns for comprehensive detection
+    ...obfuscatedEmailPatterns,
+    ...obfuscatedPhonePatterns,
+    ...obfuscatedCreditCardPatterns,
     // Add other patterns here, e.g.:
     // ssnPatternUS, 
 ];

@@ -1,5 +1,5 @@
 import { ReskLLMClient } from '../src/index';
-import { VectorStoreFactory, VectorStoreConfig, PineconeVectorStore, WeaviateVectorStore, ChromaDBVectorStore } from '../src/vector_stores/vector_store';
+import { VectorStoreFactory, VectorStoreConfig } from '../src/vector_stores/vector_store';
 
 /**
  * Exemple d'utilisation du système de persistance vectorielle

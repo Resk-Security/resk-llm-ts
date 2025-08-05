@@ -1,5 +1,4 @@
-import { ReskLLMClient, SecurityException } from '../src/index';
-import OpenAI from 'openai';
+import { ReskLLMClient } from '../src/index';
 
 /**
  * Exemple d'utilisation avancée des fonctionnalités de sécurité

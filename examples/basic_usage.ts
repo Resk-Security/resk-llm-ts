@@ -6,7 +6,6 @@
  */
 
 import { ReskLLMClient, SecurityException } from '../src/index';
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
@@ -73,7 +72,7 @@ async function basicUsageExample() {
     if (error instanceof SecurityException) {
       console.error(`Successfully blocked by resk-llm-ts: ${error.message}`);
     } else {
-      console.error(`Unexpected error: ${error.message}`);
+      console.error(`Unexpected error: ${error?.message || 'Unknown error'}`);
     }
   }
 }

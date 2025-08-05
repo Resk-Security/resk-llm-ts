@@ -1,4 +1,14 @@
 /**
+ * Custom security exception thrown when security violations are detected.
+ */
+export class SecurityException extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'SecurityException';
+    }
+}
+
+/**
  * Represents a function that takes a string and returns its vector embedding.
  */
 export type EmbeddingFunction = (text: string) => Promise<number[]>;

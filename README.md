@@ -9,7 +9,68 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-^5.4.5-blue.svg)](https://www.typescriptlang.org/)
 [![LLM Security](https://img.shields.io/badge/LLM-Security-red)](https://github.com/Resk-Security/resk-llm-ts)
 
-`resk-llm-ts` is a **production-ready, enterprise-grade security toolkit** for Large Language Models (LLMs) in JavaScript/TypeScript environments. It provides comprehensive protection against prompt injections, data leakage, content moderation, and other LLM security threats with support for multiple providers including OpenAI, Anthropic, Cohere, and HuggingFace.
+`resk-llm-ts` is a **security toolkit** for Large Language Models (LLMs) in JavaScript/TypeScript environments. It provides comprehensive protection against prompt injections, data leakage, content moderation, and other LLM security threats with support for multiple providers including OpenAI, Anthropic, Cohere, and HuggingFace.
+
+## ⚠️ **Important Security Limitations**
+
+**Pattern-based security has inherent limitations.** While this library provides robust protection against many attack vectors, it should be understood as **one layer in a comprehensive security strategy**, not a complete solution.
+
+### 🔍 **Known Limitations**
+
+#### Pattern Detection Constraints
+- **Advanced Obfuscation**: Sophisticated attackers can bypass regex patterns using novel encoding, Unicode variations, or semantic transformations
+- **Context-Dependent Attacks**: Patterns may miss contextual attacks that appear innocent individually but are malicious when combined  
+- **Zero-Day Techniques**: New attack methods won't be detected until patterns are updated
+- **Semantic Attacks**: Attacks using synonyms, metaphors, or indirect language may bypass literal pattern matching
+
+#### AI-Specific Challenges
+- **Multi-Turn Attacks**: Complex attacks spread across multiple interactions are harder to detect
+- **Model-Specific Exploits**: Techniques targeting specific LLM architectures or training methodologies
+- **Context Injection**: Attacks that manipulate conversation context or memory
+- **Adversarial Prompts**: Carefully crafted inputs designed to exploit model vulnerabilities
+
+### 🏗️ **Recommended Security Architecture**
+
+This library should be combined with multiple defense layers:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  🛡️ DEFENSE IN DEPTH                       │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Input Validation & Pattern Filtering (This Library)     │
+│ 2. Semantic Analysis & Intent Classification               │
+│ 3. Content Moderation APIs (OpenAI, Perspective, etc.)     │
+│ 4. Rate Limiting & Behavioral Analysis                     │
+│ 5. Output Filtering & Response Monitoring                  │
+│ 6. Human Review for Critical Applications                  │
+│ 7. Comprehensive Audit Logs & Incident Response            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### ✅ **Best Practices**
+
+**✅ Use This Library For:**
+- First-line defense against common attack patterns
+- Automated detection and logging of suspicious inputs
+- PII identification and redaction  
+- Basic content moderation
+- Development and testing security validation
+
+**❌ Do NOT Rely Solely On Patterns For:**
+- Mission-critical security decisions
+- Financial or healthcare applications without additional layers
+- Advanced persistent threat protection
+- Zero-trust security environments
+
+### 🔄 **Continuous Improvement**
+
+1. **Keep Updated**: Regularly update to get latest attack signatures
+2. **Monitor Effectiveness**: Track false positive/negative rates
+3. **Layer Security**: Combine with other security tools and human oversight
+4. **Audit Regularly**: Conduct penetration testing and security reviews
+5. **Report Issues**: Responsibly disclose vulnerabilities to [security@resk.fr](mailto:security@resk.fr)
+
+---
 
 ## 🚀 Production Ready Features
 

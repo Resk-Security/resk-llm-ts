@@ -1,11 +1,17 @@
-// import OpenAI from "openai";
-// Use the specific input type from the SDK if available and applicable
-// import type { ChatCompletionMessageParam, ChatCompletionContentPartText, ChatCompletionContentPart } from "openai/resources/chat/completions";
+/**
+ * HTML Sanitizer - Uses sanitize-html library for robust HTML cleaning
+ * 
+ * Features:
+ * - Professional-grade HTML sanitization using sanitize-html
+ * - Removes dangerous tags, attributes, and protocols
+ * - Configurable allowlist of safe elements
+ * - Battle-tested against XSS attacks
+ * - No regex vulnerabilities (ReDoS-safe)
+ */
+
+import sanitizeHtml from 'sanitize-html';
 import { SecurityFeatureConfig } from "../index";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-// import { ChatCompletionContentPartText, ChatCompletionContentPart } from "openai/resources/chat/completions";
-// Removing this import to fix conflict
-// import { type InputSanitizationConfig } from "../types";
 
 // Export the config interface
 export interface InputSanitizationConfig extends SecurityFeatureConfig {
@@ -56,10 +62,29 @@ export class InputSanitizer {
         if (!this.config.enabled || !text) {
             return text;
         }
-        // Replace entire HTML tag blocks more accurately
-        // This handles tags like <script>alert("bad")</script> as a single block
-        const htmlBlockRegex = /<[^>]*>[^<]*<\/[^>]*>|<[^>]*\/?>/g;
-        const sanitized = text.replace(htmlBlockRegex, '[removed]');
+        
+        // Use sanitize-html for professional-grade HTML sanitization
+        // This is much safer than regex-based approaches and prevents ReDoS
+        const sanitized = sanitizeHtml(text, {
+            // By default, allow no tags (strip all HTML)
+            allowedTags: this.config.allowedTags || [],
+            // By default, allow no attributes
+            allowedAttributes: {},
+            // Remove script src, object data, etc.
+            disallowedTagsMode: 'discard',
+            // Remove dangerous protocols
+            allowedSchemes: ['http', 'https', 'mailto'],
+            // Keep text content when removing tags
+            exclusiveFilter: function(frame) {
+                // Remove any remaining dangerous elements
+                return frame.tag === 'script' || 
+                       frame.tag === 'style' || 
+                       frame.tag === 'object' || 
+                       frame.tag === 'embed' || 
+                       frame.tag === 'iframe';
+            }
+        });
+        
         return sanitized;
     }
 } 

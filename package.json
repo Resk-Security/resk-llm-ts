@@ -1,14 +1,12 @@
 {
   "name": "resk-llm-ts",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "A TypeScript library for secure LLM interactions.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "lint": "eslint src/**/*.ts test/**/*.ts",
-    "test": "jest",
-    "prepublishOnly": "npm run build",
     "example:basic": "ts-node examples/basic_usage.ts",
     "example:express": "ts-node examples/express_integration.ts",
     "example:advanced": "ts-node examples/advanced_security_usage.ts",
@@ -45,9 +43,12 @@
     "@types/jest": "^29.5.12",
     "@types/mathjs": "^9.4.2",
     "@types/node": "^20.12.12",
+    "@types/sanitize-html": "^2.16.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^9.25.1",
+    "eslint-plugin-no-unsanitized": "^4.1.2",
+    "eslint-plugin-security": "^3.0.1",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
@@ -56,7 +57,8 @@
   },
   "dependencies": {
     "mathjs": "^12.4.2",
-    "openai": "^4.47.1"
+    "openai": "^4.47.1",
+    "sanitize-html": "^2.17.0"
   },
   "files": [
     "dist/**/*"

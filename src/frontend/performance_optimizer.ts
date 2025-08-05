@@ -178,7 +178,6 @@ export class PerformanceOptimizer {
         delay: number,
         key?: string
     ): (...args: Parameters<T>) => Promise<ReturnType<T>> {
-        const debounceKey = key || fn.name || 'default';
         let timeoutId: NodeJS.Timeout;
 
         return (...args: Parameters<T>): Promise<ReturnType<T>> => {

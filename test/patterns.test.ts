@@ -20,9 +20,11 @@ describe('Security Patterns', () => {
 
   it('detects malicious URLs', () => {
     const samples = [
-      'https://bit.ly/abc',
-      'https://malicious.ru/login',
-      'https://phishingsite.com/verify',
+      'https://bit.ly/abc',                    // URL shortener
+      'https://malicious.ru/login',            // Suspicious TLD + phishing path
+      'https://phishingsite.com/verify',       // Phishing path
+      'http://192.168.1.1/malware',           // IP address
+      'https://suspicious.tk/login',           // Suspicious domain pattern
     ];
     for (const pattern of maliciousUrlPatterns) {
       expect(samples.some(s => pattern.test(s))).toBe(true);

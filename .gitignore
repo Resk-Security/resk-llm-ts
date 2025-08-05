@@ -12,6 +12,20 @@ dist/
 *.tar.bz2
 *.tar.xz
 
+# CodeQL
+codeql-analysis.yml
+codeql-database.db
+codeql-database.db-wal
+codeql-database.db-shm
+/codeql-db 
+code-scanning-results.csv
+security-results.sarif 
+
+# Test files
+test_lib_basic.js
+test_lib_basic.ts
+
+
 # Test files
 test_lib_basic.js
 test_lib_basic.ts
