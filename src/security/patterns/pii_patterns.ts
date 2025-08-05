@@ -32,7 +32,7 @@ export const obfuscatedPhonePatterns: RegExp[] = [
     // Standard phone
     /\b(?:\+?1[ -.]?)?[(]?\d{3}[)]?[ -.]?\d{3}[ -.]?\d{4}\b/g,
     // With excessive spaces or symbols
-    /\b(?:\+?1[\s.-]?)?[\(\[]?\d{3}[\)\]]?[\s.-]?\d{3}[\s.-]?\d{4}\b/g,
+    /\b(?:\+?1[\s.-]?)?[([[]?\d{3}[)\]]?[\s.-]?\d{3}[\s.-]?\d{4}\b/g,
     // Dot/word separation: 555 DOT 123 DOT 4567
     /\b\d{3}[\s.]*(?:dot|DOT)[\s.]*\d{3}[\s.]*(?:dot|DOT)[\s.]*\d{4}\b/g,
 ];
@@ -48,7 +48,7 @@ export const obfuscatedCreditCardPatterns: RegExp[] = [
     // With X's: 1234 XXXX XXXX 5678
     /\b\d{4}[\sX-]*X{4}[\sX-]*X{4}[\sX-]*\d{4}\b/g,
     // Mixed obfuscation
-    /\b\d{4}[\s*X-]{1,4}[\*X]{4}[\s*X-]{1,4}[\*X]{4}[\s*X-]{1,4}\d{4}\b/g,
+    /\b\d{4}[\s*X-]{1,4}[*X]{4}[\s*X-]{1,4}[*X]{4}[\s*X-]{1,4}\d{4}\b/g,
 ];
 
 // Basic IPv4 Address pattern

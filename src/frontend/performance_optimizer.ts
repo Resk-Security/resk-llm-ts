@@ -324,14 +324,16 @@ export class PerformanceOptimizer {
                 reject(new Error(`Validation timeout after ${task.timeout}ms`));
             }, task.timeout);
 
-            try {
-                const result = await task.task();
-                clearTimeout(timeoutId);
-                resolve(result);
-            } catch (error) {
-                clearTimeout(timeoutId);
-                reject(error);
-            }
+            // Use .then().catch() instead of await in promise executor
+            task.task()
+                .then(result => {
+                    clearTimeout(timeoutId);
+                    resolve(result);
+                })
+                .catch(error => {
+                    clearTimeout(timeoutId);
+                    reject(error);
+                });
         });
     }
 

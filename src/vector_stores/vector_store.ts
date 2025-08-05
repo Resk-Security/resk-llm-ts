@@ -560,7 +560,7 @@ export class VectorStoreUtils {
         batchSize: number = 100
     ): Promise<number> {
         console.log('[VectorStoreUtils] Starting data migration...');
-        let migratedCount = 0;
+        const migratedCount = 0;
 
         try {
             // Implémentation simplifiée - en pratique il faudrait paginer

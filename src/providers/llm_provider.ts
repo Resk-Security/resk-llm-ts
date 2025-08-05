@@ -154,7 +154,8 @@ export class OpenAIProvider extends LLMProvider {
         if (openaiClient) {
             this.client = openaiClient;
         } else {
-            // Dynamically import OpenAI to avoid hard dependency
+            // Dynamic import OpenAI to avoid hard dependency
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const OpenAI = require('openai');
             this.client = new OpenAI({
                 apiKey: config.apiKey,

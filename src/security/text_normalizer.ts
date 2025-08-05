@@ -32,7 +32,7 @@ export class TextNormalizer {
         { pattern: /\[.\]/g, replacement: '.' }, // [.] -> .
         { pattern: /\[@\]/g, replacement: '@' }, // [@] -> @
         { pattern: /hxxp/gi, replacement: 'http' },
-        { pattern: /[\[\]]/g, replacement: '' }, // Remove brackets
+        { pattern: /[[\]]/g, replacement: '' }, // Remove brackets
     ];
 
     constructor(config?: Partial<TextNormalizationConfig>) {

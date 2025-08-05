@@ -37,12 +37,12 @@ export class PromptInjectionDetector {
         // Niveau MEDIUM - Techniques sophistiquées  
         medium: {
             encoding: [
-                /base64[:\s]*[A-Za-z0-9+\/=]{20,}/gi,
+                /base64[:\s]*[A-Za-z0-9+/=]{20,}/gi,
                 /hex[:\s]*[0-9a-fA-F]{20,}/gi,
                 /(?:rot13|caesar|encode)/gi
             ],
             contextBreak: [
-                /\*{3,}|\-{3,}|={3,}/g, // Separators
+                /\*{3,}|-{3,}|={3,}/g, // Separators
                 /(?:start|begin|end)\s+(?:new|fresh)\s+(?:context|conversation|session)/gi,
                 /(?:context|conversation)\s+(?:switch|change|reset)/gi
             ],
@@ -87,7 +87,7 @@ export class PromptInjectionDetector {
         tokenManipulation: [
             /\[INST\]|\[\/INST\]/gi, // Llama instruction tokens
             /<\|im_start\||<\|im_end\|>/gi, // ChatML tokens
-            /\<\|system\|\>|\<\|user\|\>|\<\|assistant\|\>/gi,
+            /<\|system\|>|<\|user\|>|<\|assistant\|>/gi,
             /<s>|<\/s>/gi // Special tokens
         ],
         promptLeaking: [
