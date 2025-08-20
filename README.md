@@ -11,6 +11,10 @@
 
 `resk-llm-ts` is a **security toolkit** for Large Language Models (LLMs) in JavaScript/TypeScript environments. It provides comprehensive protection against prompt injections, data leakage, content moderation, and other LLM security threats with support for multiple providers including OpenAI, Anthropic, Cohere, and HuggingFace.
 
+## Documentation
+
+See the full documentation on Read the Docs: [reskts.readthedocs.io](https://reskts.readthedocs.io/en/latest/)
+
 ## ⚠️ **Important Security Limitations**
 
 **Pattern-based security has inherent limitations.** While this library provides robust protection against many attack vectors, it should be understood as **one layer in a comprehensive security strategy**, not a complete solution.
