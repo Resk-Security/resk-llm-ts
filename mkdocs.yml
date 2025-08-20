@@ -1,0 +1,35 @@
+site_name: resk-llm-js
+site_description: Secure LLM interactions library for Node.js/TypeScript
+repo_url: https://github.com/Resk-Security/resk-llm-js
+repo_name: Resk-Security/resk-llm-js
+site_url: https://resk-llm-js.readthedocs.io/
+
+theme:
+  name: readthedocs
+
+plugins:
+  - search
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - admonition
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Configuration: configuration.md
+  - Customization: customization.md
+  - Usage:
+      - Backend (Node/TS): usage/backend.md
+      - Frontend: usage/frontend.md
+  - Security:
+      - Patterns & rules: security/patterns.md
+  - Integrations:
+      - Vector DB: integrations/vector-db.md
+  - Providers: providers.md
+  - Guides:
+      - Complete implementation: COMPLETE_IMPLEMENTATION_GUIDE.md
+      - SIEM monitoring: SIEM_MONITORING_GUIDE.md
+  - Examples: examples.md
