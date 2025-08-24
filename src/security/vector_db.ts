@@ -82,6 +82,18 @@ export class VectorDatabase {
     }
 
     /**
+     * Updates the similarity threshold used for detection.
+     * Value should be in the range [0, 1].
+     */
+    public setSimilarityThreshold(threshold: number): void {
+        if (Number.isNaN(threshold) || threshold < 0 || threshold > 1) {
+            throw new Error("Similarity threshold must be a number between 0 and 1.");
+        }
+        this.similarityThreshold = threshold;
+        this.config.similarityThreshold = threshold;
+    }
+
+    /**
      * Adds a text entry to the database after generating its embedding.
      * @param text The text content to add.
      * @param metadata Optional metadata to associate with the entry.

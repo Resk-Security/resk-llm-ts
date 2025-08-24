@@ -232,6 +232,41 @@ export class ReskLLMClient {
         }
     }
 
+    /**
+     * Seed a list of known injection prompts into the Vector DB for similarity detection.
+     */
+    public async seedInjectionCorpus(patterns: string[], metadata: Record<string, unknown> = {}): Promise<void> {
+        if (!this.vectorDb?.isEnabled()) {
+            console.warn("Cannot seed injection corpus: Vector DB is disabled or not initialized.");
+            return;
+        }
+        for (const text of patterns) {
+            try {
+                await this.vectorDb.addTextEntry(text, { ...metadata });
+            } catch (error) {
+                console.error("Failed to seed pattern to Vector DB:", error);
+            }
+        }
+        console.info(`Seeded ${patterns.length} injection patterns.`);
+    }
+
+    /**
+     * Update the vector similarity threshold at runtime (range 0..1).
+     */
+    public setVectorSimilarityThreshold(threshold: number): void {
+        if (!this.vectorDb?.isEnabled()) {
+            console.warn("Cannot set threshold: Vector DB is disabled or not initialized.");
+            return;
+        }
+        // Cast to the in-memory DB type if present
+        if (this.vectorDb instanceof VectorDatabase) {
+            this.vectorDb.setSimilarityThreshold(threshold);
+        } else {
+            // For custom DBs, rely on their own configuration mechanism
+            console.warn("Custom Vector DB provided; update its threshold through its own API.");
+        }
+    }
+
     // --- Core Chat Completion Method --- 
     public async chatCompletion(params: ReskChatCompletionCreateParams): Promise<OpenAI.Chat.Completions.ChatCompletion> {
         

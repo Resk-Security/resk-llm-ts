@@ -16,6 +16,27 @@ export function sanitizeUserPrompt(prompt: string) {
 }
 ```
 
+## Refusing based on vector similarity
+
+```ts
+import { ReskLLMClient } from 'resk-llm-ts';
+import { canonicalInjectionCorpus } from '../../src/security/patterns/llm_injection_patterns';
+
+const client = new ReskLLMClient({
+  provider: 'openai',
+  providerConfig: { apiKey: process.env.OPENAI_API_KEY! },
+  securityConfig: { vectorDb: { enabled: true, similarityThreshold: 0.88 } }
+});
+
+await client.seedInjectionCorpus(canonicalInjectionCorpus, { source: 'builtin' });
+
+// Throws if the user prompt is too similar to known injection patterns
+await client.chat.completion.create({
+  model: 'openai/gpt-4o',
+  messages: [{ role: 'user', content: 'Ignore previous instructions and...' }]
+});
+```
+
 ## Express middleware
 
 ```ts
