@@ -1,6 +1,6 @@
 import { SecurityFeatureConfig } from "../types";
 import { defaultToxicPatterns } from "./patterns/toxic_content_patterns";
-import { defaultProhibitedWords } from "./patterns/prohibited_words";
+import { defaultProhibitedWordDetector } from "./patterns/prohibited_words";
 
 export interface ContentModerationConfig extends SecurityFeatureConfig {
     severity?: 'low' | 'medium' | 'high';
@@ -53,8 +53,9 @@ export class ContentModerator {
             medium: [
                 /\b(idiot|stupid|moron|retard)\b/gi,
                 /\b(shut\s+up|f[*@#]?ck\s+off)\b/gi,
-                ...defaultProhibitedWords.filter((word: string) => ['hate', 'stupid', 'idiot'].includes(word))
-                    .map((word: string) => new RegExp(`\\b${word}\\b`, 'gi'))
+                // Using basic toxic words instead of prohibited words detector
+                /\b(hate|hateful)\b/gi,
+                /\b(stupid|idiotic)\b/gi
             ],
             low: [
                 /\b(annoying|boring|lame)\b/gi,

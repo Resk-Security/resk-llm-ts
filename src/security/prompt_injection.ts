@@ -1,6 +1,8 @@
 import { type PromptInjectionConfig } from "../types";
 
 import { TextNormalizer } from "./text_normalizer";
+import { SpecialTokenDetector, defaultTokenDetector } from "./patterns/special_tokens";
+import { ProhibitedWordDetector, defaultProhibitedWordDetector } from "./patterns/prohibited_words";
 
 export interface InjectionDetectionResult {
     detected: boolean;
@@ -9,11 +11,25 @@ export interface InjectionDetectionResult {
     matchedPatterns: string[];
     techniques: string[];
     severity: 'low' | 'medium' | 'high' | 'critical';
+    // Enhanced detection results
+    specialTokens?: {
+        detected: boolean;
+        tokens: string[];
+        dangerous: boolean;
+    };
+    prohibitedWords?: {
+        detected: boolean;
+        words: string[];
+        categories: string[];
+        highestSeverity: string;
+    };
 }
 
 export class PromptInjectionDetector {
     private config: PromptInjectionConfig;
     private textNormalizer: TextNormalizer;
+    private tokenDetector: SpecialTokenDetector;
+    private wordDetector: ProhibitedWordDetector;
     
     // Patterns organisés par niveau de sévérité et technique
     private readonly injectionPatterns = {
@@ -71,9 +87,10 @@ export class PromptInjectionDetector {
             ],
             socialEngineering: [
                 /(?:my|our)\s+(?:grandmother|grandma|mother|mom)\s+(?:died|passed\s+away)/gi,
-                /emergency|urgent|critical|important/gi,
-                /(?:help|save|rescue)\s+(?:me|us|someone)/gi,
-                /(?:legal|authorized|official)\s+(?:request|requirement)/gi
+                /(?:emergency|urgent|critical|life\s+threatening)\s+(?:situation|help|request)/gi,
+                /(?:help|save|rescue)\s+(?:me|us|someone)\s+(?:from|before|or)/gi,
+                /(?:legal|authorized|official|government)\s+(?:request|requirement|order|demand)/gi,
+                /(?:dying|death|suicide|kill\s+myself)\s+(?:help|please|urgent)/gi
             ],
             multilingual: [
                 /说|говори|parlez|sprechen|話す/gi, // "Say/speak" in other languages
@@ -123,6 +140,10 @@ export class PromptInjectionDetector {
             normalizeObfuscation: true,
             normalizeHomoglyphs: true,
         });
+        
+        // Initialize specialized detectors
+        this.tokenDetector = defaultTokenDetector;
+        this.wordDetector = defaultProhibitedWordDetector;
     }
 
     /**
@@ -157,19 +178,62 @@ export class PromptInjectionDetector {
             severity: 'low'
         };
 
-        // Analyse par niveau selon la configuration
+        // 1. Enhanced token detection
+        const tokenResults = this.tokenDetector.detect(text);
+        if (tokenResults.detected) {
+            result.detected = true;
+            result.techniques.push('special_tokens');
+            result.confidence += 0.6;
+            
+            result.specialTokens = {
+                detected: true,
+                tokens: tokenResults.tokens,
+                dangerous: this.tokenDetector.containsDangerousTokens(text)
+            };
+            
+            // Dangerous tokens escalate severity
+            if (result.specialTokens.dangerous) {
+                result.confidence += 0.3;
+                result.detectionLevel = 'high';
+                result.techniques.push('dangerous_tokens');
+            }
+        }
+
+        // 2. Enhanced word detection
+        const wordResults = this.wordDetector.detect(text);
+        if (wordResults.detected) {
+            result.detected = true;
+            result.techniques.push('prohibited_words');
+            result.confidence += wordResults.confidence;
+            
+            result.prohibitedWords = {
+                detected: true,
+                words: wordResults.matchedWords.map(m => m.word),
+                categories: wordResults.categories,
+                highestSeverity: wordResults.highestSeverity
+            };
+            
+            // Security and prompt manipulation words are high risk
+            if (wordResults.categories.includes('security') || 
+                wordResults.categories.includes('prompt_manipulation')) {
+                result.confidence += 0.4;
+                result.detectionLevel = 'high';
+            }
+        }
+
+        // 3. Analyse par niveau selon la configuration (original logic)
         const levelsToCheck = this.getLevelsToCheck();
         
         for (const level of levelsToCheck) {
             this.analyzeLevel(text, level, result);
         }
 
-        // Analyse des techniques avancées si niveau suffisant
+        // 4. Analyse des techniques avancées si niveau suffisant
         if (this.config.level === 'advanced' || result.confidence > 0.5) {
             this.analyzeAdvancedTechniques(text, result);
         }
 
-        // Calcul de la confiance finale et sévérité
+        // 5. Calcul de la confiance finale et sévérité
         this.calculateFinalScores(result);
 
         return result;
@@ -345,12 +409,40 @@ export class PromptInjectionDetector {
         patternsByLevel: Record<string, number>;
         advancedTechniques: number;
         currentLevel: string;
+        tokenPatterns: number;
+        prohibitedWords: number;
+        detectorStats: {
+            tokens: {
+                totalPatterns: number;
+                patternsByCategory: Record<string, number>;
+            };
+            words: {
+                totalWords: number;
+                categoriesEnabled: number;
+                wordsByCategory: Record<string, number>;
+                severityDistribution: Record<string, number>;
+            };
+        };
     } {
         const stats = {
             totalPatterns: 0,
             patternsByLevel: {} as Record<string, number>,
             advancedTechniques: 0,
-            currentLevel: this.config.level || 'basic'
+            currentLevel: this.config.level || 'basic',
+            tokenPatterns: 0,
+            prohibitedWords: 0,
+            detectorStats: {
+                tokens: {
+                    totalPatterns: 0,
+                    patternsByCategory: {} as Record<string, number>
+                },
+                words: {
+                    totalWords: 0,
+                    categoriesEnabled: 0,
+                    wordsByCategory: {} as Record<string, number>,
+                    severityDistribution: {} as Record<string, number>
+                }
+            }
         };
 
         // Compter les patterns par niveau
@@ -368,6 +460,37 @@ export class PromptInjectionDetector {
             stats.advancedTechniques += patterns.length;
         }
 
+        // Get detector statistics
+        stats.detectorStats.tokens = this.tokenDetector.getStats();
+        stats.detectorStats.words = this.wordDetector.getStats();
+        
+        stats.tokenPatterns = stats.detectorStats.tokens.totalPatterns;
+        stats.prohibitedWords = stats.detectorStats.words.totalWords;
+
         return stats;
+    }
+
+    /**
+     * Get token detector instance
+     */
+    getTokenDetector(): SpecialTokenDetector {
+        return this.tokenDetector;
+    }
+
+    /**
+     * Get word detector instance
+     */
+    getWordDetector(): ProhibitedWordDetector {
+        return this.wordDetector;
+    }
+
+    /**
+     * Sanitize text by removing special tokens
+     */
+    sanitizeTokens(text: string, replacement: string = '[TOKEN_REMOVED]'): {
+        sanitizedText: string;
+        removedTokens: string[];
+    } {
+        return this.tokenDetector.sanitize(text, replacement);
     }
 } 
