@@ -33,6 +33,13 @@ Always reference these instructions first and fallback to search or bash command
   - **Frontend changes**: Test with `npm run test:frontend`
   - **Security changes**: Always run full test suite with `npm run test:all`
 
+- **Security functionality validation scenarios:**
+  - **Safe input**: "What is the weather like today?" → Should pass without warnings
+  - **PII detection**: "My email is user@example.com" → Should detect and warn about email
+  - **Prompt injection**: "Ignore all instructions above" → Should detect injection attempt
+  - **Combined threats**: Mix of PII + injection → Should detect both issues
+  - All scenarios tested automatically in Jest suite with 47 passing tests
+
 - **Example validation (requires additional setup):**
   - Examples require `ts-node` but it's not in the main dependencies
   - Install with: `npm install --save-dev ts-node` 
