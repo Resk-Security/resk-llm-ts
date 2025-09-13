@@ -1,4 +1,4 @@
-name: Node.js Package CI/CD
+name: Bun Package CI/CD
 
 
 
@@ -19,28 +19,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['18.x', '20.x'] # Test on LTS versions
+        bun-version: ['latest', '1.0.0'] # Test on different Bun versions
 
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Setup Bun ${{ matrix.bun-version }}
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm' # Cache npm dependencies
+          bun-version: ${{ matrix.bun-version }}
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install
 
       - name: Lint code
-        run: npm run lint
+        run: bun run lint
 
       - name: Type check with TypeScript
-        run: npx tsc --noEmit
+        run: bun run build
 
       - name: Run tests
-        run: npm test
+        run: bun test
 
   build-and-publish:
     needs: test # Run only if tests pass
@@ -51,18 +50,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Node.js 20.x
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js for NPM registry
         uses: actions/setup-node@v4
         with:
           node-version: '20.x' 
           registry-url: 'https://registry.npmjs.org' # Set npm registry
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci 
+        run: bun install
 
       - name: Build
-        run: npm run build:prod
+        run: bun run build:prod
 
       - name: Create package
         run: npm pack
@@ -78,8 +81,8 @@ jobs:
       - name: Get package info
         id: package
         run: |
-          echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
-          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          echo "name=$(bun --print "require('./package.json').name")" >> $GITHUB_OUTPUT
+          echo "version=$(bun --print "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
