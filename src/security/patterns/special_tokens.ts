@@ -84,10 +84,14 @@ export const dangerousTokenPatterns: RegExp[] = [
     /<\|sudo\|>/gi,
     
     // Token boundary manipulation
+    // eslint-disable-next-line no-control-regex
     /\x00/g,                  // Null bytes
     /\uffff/g,                // Unicode max character
+    // eslint-disable-next-line no-control-regex
     /\u0001/g,                // Start of heading
+    // eslint-disable-next-line no-control-regex
     /\u0002/g,                // Start of text
+    // eslint-disable-next-line no-control-regex
     /\u0003/g,                // End of text
     
     // Model-specific bypass attempts
