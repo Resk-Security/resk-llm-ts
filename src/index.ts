@@ -37,11 +37,8 @@ export { InjectionDetectionResult } from './security/prompt_injection';
 export { ModerationResult } from './security/content_moderation';
 export { AlertConfig, AlertPayload, AlertResult } from './security/alert_system';
 
-// Re-export frontend security components
-export { ReskSecurityFilter, FrontendSecurityConfig, SecurityValidationResult, ProviderType, ProviderMessage, ProviderRequest, ProviderResponse } from './frontend/resk_security_filter';
-export { SecurityCache, CacheConfig } from './frontend/security_cache';
-export { PerformanceOptimizer, PerformanceConfig, PerformanceMetrics } from './frontend/performance_optimizer';
-export { SIEMIntegration, SIEMConfig, SecurityEvent, SIEMMetrics } from './frontend/siem_integration';
+// Frontend components exports removed to avoid circular dependencies in tests
+// Import them directly from frontend/ files when needed
 
 // --- Helper Function for OpenAI Embeddings ---
 

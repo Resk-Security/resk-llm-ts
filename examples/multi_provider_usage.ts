@@ -1,9 +1,12 @@
-import { ReskLLMClient } from '../src/index';
+#!/usr/bin/env bun
+
+import { ReskLLMClient } from '../src/index.js';
+import { createProviderConfigFromEnv, PROVIDER_MODELS, PROVIDER_CONFIGS } from '../src/providers/llm_provider.js';
 
 /**
- * Exemple d'utilisation multi-providers avec le système de sécurité
- * Démontre comment utiliser différents LLM providers avec les mêmes
- * protections de sécurité
+ * Example demonstrating multi-provider usage with different LLM services
+ * Shows how to easily switch between OpenAI, DeepSeek, Anthropic, etc.
+ * Set API keys: export API_KEY_LLM="your_key" or export PROVIDER_API_KEY="your_key"
  */
 
 async function demonstrateMultiProviderSecurity() {

@@ -1,6 +1,6 @@
 import { SecurityFeatureConfig } from "../types";
 import { defaultToxicPatterns } from "./patterns/toxic_content_patterns";
-import { defaultProhibitedWordDetector } from "./patterns/prohibited_words";
+// import { defaultProhibitedWordDetector } from "./patterns/prohibited_words";
 
 export interface ContentModerationConfig extends SecurityFeatureConfig {
     severity?: 'low' | 'medium' | 'high';
@@ -206,7 +206,7 @@ export class ContentModerator {
         content: string,
         category: string,
         severityPatterns: Record<string, RegExp[]>,
-        context?: { role?: string; userId?: string }
+        _context?: { role?: string; userId?: string }
     ): ModerationResult['violations'] {
         const violations: ModerationResult['violations'] = [];
         const configuredAction = this.config.actions?.[category as keyof typeof this.config.actions] || 'warn';

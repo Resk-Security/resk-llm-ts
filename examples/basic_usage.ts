@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 /**
  * Basic Usage Example for resk-llm-ts
  * 
@@ -5,11 +7,8 @@
  * to securely interact with OpenAI or OpenRouter APIs.
  */
 
-import { ReskLLMClient, SecurityException } from '../src/index';
-import dotenv from 'dotenv';
-
-// Load environment variables from .env file
-dotenv.config();
+import { ReskLLMClient, SecurityException } from '../src/index.js';
+import { createProviderConfigFromEnv } from '../src/providers/llm_provider.js';
 
 async function basicUsageExample() {
   // Create the secure client with basic security features enabled

@@ -1,25 +1,27 @@
 {
   "name": "resk-llm-ts",
-  "version": "0.6.0",
+  "version": "0.9.0",
   "description": "A TypeScript library for secure LLM interactions.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "jest",
+    "test": "bun test",
+    "test:jest": "jest",
     "lint": "eslint src/**/*.ts test/**/*.ts",
-    "example:basic": "ts-node examples/basic_usage.ts",
-    "example:express": "ts-node examples/express_integration.ts",
-    "example:advanced": "ts-node examples/advanced_security_usage.ts",
-    "example:vector": "ts-node examples/vector_db_setup.ts",
-    "example:frontend-security": "ts-node examples/frontend_security_usage.ts",
-    "example:multi-provider": "ts-node examples/multi_provider_usage.ts",
-    "example:vector-persistence": "ts-node examples/vector_persistence_usage.ts",
+    "example:basic": "bun run examples/basic_usage.ts",
+    "example:express": "bun run examples/express_integration.ts",
+    "example:advanced": "bun run examples/advanced_security_usage.ts",
+    "example:vector": "bun run examples/vector_db_setup.ts",
+    "example:frontend-security": "bun run examples/frontend_security_usage.ts",
+    "example:multi-provider": "bun run examples/multi_provider_usage.ts",
+    "example:vector-persistence": "bun run examples/vector_persistence_usage.ts",
+    "example:deepseek": "bun run examples/deepseek_usage.ts",
     "test:frontend": "jest test/frontend_security.test.ts",
     "test:all": "jest --coverage",
-    "build:prod": "tsc --project tsconfig.json && npm run lint",
-    "prepublishOnly": "npm run build:prod && npm test"
+    "build:prod": "tsc --project tsconfig.json && bun run lint",
+    "prepublishOnly": "bun run build:prod && bun test"
   },
   "repository": {
     "type": "git",
@@ -33,6 +35,9 @@
     "resk",
     "prompt injection",
     "openai",
+    "deepseek",
+    "anthropic",
+    "bun",
     "moderation"
   ],
   "author": "Resk contact@resk.fr",
@@ -63,6 +68,9 @@
     "mathjs": "^12.4.2",
     "openai": "^4.47.1",
     "sanitize-html": "^2.17.0"
+  },
+  "peerDependencies": {
+    "bun": ">=1.0.0"
   },
   "files": [
     "dist/**/*"

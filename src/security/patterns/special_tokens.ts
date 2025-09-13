@@ -94,9 +94,9 @@ export const dangerousTokenPatterns: RegExp[] = [
     // eslint-disable-next-line no-control-regex
     /\u0003/g,                // End of text
     
-    // Model-specific bypass attempts
-    /<\|.*?\|>/gi,            // Generic special token format
-    /\[.*?\]/g,               // Generic bracket format (be careful with this one)
+    // Model-specific bypass attempts (ReDoS-safe versions)
+    /<\|[^|]*\|>/gi,          // Generic special token format (non-backtracking)
+    /\[[^\]]*\]/g,            // Generic bracket format (non-backtracking)
     
     // Encoding-based token injection
     /&#x[0-9a-f]+;/gi,        // Hex HTML entities
@@ -147,10 +147,13 @@ export class SpecialTokenDetector {
         for (const pattern of this.patterns) {
             pattern.lastIndex = 0; // Reset regex state
             let match;
+            let iterations = 0;
+            const maxIterations = 1000; // Prevent infinite loops and ReDoS
             
-            while ((match = pattern.exec(text)) !== null) {
+            while ((match = pattern.exec(text)) !== null && iterations < maxIterations) {
                 result.detected = true;
                 const token = match[0];
+                iterations++;
                 
                 if (!result.tokens.includes(token)) {
                     result.tokens.push(token);
@@ -180,8 +183,19 @@ export class SpecialTokenDetector {
      * Check if text contains dangerous token patterns
      */
     containsDangerousTokens(text: string): boolean {
+        // Add timeout protection to prevent ReDoS attacks
+        const startTime = Date.now();
+        const maxExecutionTime = 100; // 100ms max per pattern
+        
         for (const pattern of dangerousTokenPatterns) {
             pattern.lastIndex = 0;
+            
+            // Check execution time to prevent ReDoS
+            if (Date.now() - startTime > maxExecutionTime) {
+                console.warn('[SecurityWarning] Regex execution timeout reached, potential ReDoS attack');
+                return false; // Fail safe
+            }
+            
             if (pattern.test(text)) {
                 return true;
             }

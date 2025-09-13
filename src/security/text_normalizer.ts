@@ -69,8 +69,9 @@ export class TextNormalizer {
 
         // 3. Spacing normalization
         if (this.config.normalizeSpacing) {
+            // Use non-backtracking approach to prevent ReDoS
             normalized = normalized
-                .replace(/\s+/g, ' ') // Multiple spaces to single
+                .split(/\s+/).filter(Boolean).join(' ') // Multiple spaces to single (ReDoS-safe)
                 .replace(/\s*([.@:])\s*/g, '$1') // Remove spaces around special chars
                 .trim();
         }

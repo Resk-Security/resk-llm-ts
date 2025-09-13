@@ -51,6 +51,103 @@ export interface LLMProviderConfig {
     headers?: Record<string, string>;
     maxRetries?: number;
     retryDelay?: number;
+    provider?: 'openai' | 'openrouter' | 'deepseek' | 'anthropic' | 'google' | 'mistral';
+}
+
+/**
+ * Provider configurations predefined for common LLM services
+ */
+export const PROVIDER_CONFIGS = {
+    openai: {
+        baseUrl: 'https://api.openai.com/v1',
+        headers: {}
+    },
+    openrouter: {
+        baseUrl: 'https://openrouter.ai/api/v1',
+        headers: {
+            'HTTP-Referer': 'https://resk.fr',
+            'X-Title': 'Resk LLM Security'
+        }
+    },
+    deepseek: {
+        baseUrl: 'https://api.deepseek.com/v1',
+        headers: {}
+    },
+    anthropic: {
+        baseUrl: 'https://api.anthropic.com/v1',
+        headers: {
+            'anthropic-version': '2023-06-01'
+        }
+    },
+    google: {
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+        headers: {}
+    },
+    mistral: {
+        baseUrl: 'https://api.mistral.ai/v1',
+        headers: {}
+    }
+} as const;
+
+/**
+ * Recommended models for each provider
+ */
+export const PROVIDER_MODELS = {
+    openai: [
+        'gpt-4o',
+        'gpt-4o-mini',
+        'gpt-4-turbo',
+        'gpt-3.5-turbo'
+    ],
+    openrouter: [
+        'openai/gpt-4o',
+        'anthropic/claude-3.5-sonnet',
+        'google/gemini-pro-1.5',
+        'meta-llama/llama-3.1-8b-instruct'
+    ],
+    deepseek: [
+        'deepseek-chat',
+        'deepseek-coder',
+        'deepseek-math'
+    ],
+    anthropic: [
+        'claude-3-5-sonnet-20241022',
+        'claude-3-opus-20240229',
+        'claude-3-haiku-20240307'
+    ],
+    google: [
+        'gemini-1.5-pro',
+        'gemini-1.5-flash',
+        'gemini-pro'
+    ],
+    mistral: [
+        'mistral-large-latest',
+        'mistral-medium-latest',
+        'mistral-small-latest'
+    ]
+} as const;
+
+/**
+ * Create a provider config from environment variables
+ */
+export function createProviderConfigFromEnv(provider: keyof typeof PROVIDER_CONFIGS): LLMProviderConfig {
+    const apiKey = process.env.API_KEY_LLM || process.env[`${provider.toUpperCase()}_API_KEY`];
+    
+    if (!apiKey) {
+        throw new Error(`API key not found for provider ${provider}. Set API_KEY_LLM or ${provider.toUpperCase()}_API_KEY environment variable.`);
+    }
+
+    const providerConfig = PROVIDER_CONFIGS[provider];
+    
+    return {
+        apiKey,
+        provider,
+        baseUrl: providerConfig.baseUrl,
+        headers: providerConfig.headers,
+        timeout: 30000,
+        maxRetries: 3,
+        retryDelay: 1000
+    };
 }
 
 export interface EmbeddingResponse {
@@ -86,7 +183,7 @@ export abstract class LLMProvider {
     /**
      * Génère des embeddings (optionnel)
      */
-    async generateEmbedding(text: string, model?: string): Promise<number[]> {
+    async generateEmbedding(_text: string, _model?: string): Promise<number[]> {
         throw new Error(`${this.providerName} does not support embeddings. Use OpenAI for embeddings.`);
     }
 
