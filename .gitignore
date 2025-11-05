@@ -4,6 +4,15 @@ node_modules/
 # Build artifacts
 dist/
 
+bun.lock
+
+test/
+.eslintrc.js
+.eslintrc.security.js
+
+package-lock.json
+yarn.lock
+
 # Package files
 *.tgz
 *.tar.gz

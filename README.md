@@ -33,47 +33,6 @@ See the full documentation on Read the Docs: [reskts.readthedocs.io](https://res
 - **Context Injection**: Attacks that manipulate conversation context or memory
 - **Adversarial Prompts**: Carefully crafted inputs designed to exploit model vulnerabilities
 
-### 🏗️ **Recommended Security Architecture**
-
-This library should be combined with multiple defense layers:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  🛡️ DEFENSE IN DEPTH                       │
-├─────────────────────────────────────────────────────────────┤
-│ 1. Input Validation & Pattern Filtering (This Library)     │
-│ 2. Semantic Analysis & Intent Classification               │
-│ 3. Content Moderation APIs (OpenAI, Perspective, etc.)     │
-│ 4. Rate Limiting & Behavioral Analysis                     │
-│ 5. Output Filtering & Response Monitoring                  │
-│ 6. Human Review for Critical Applications                  │
-│ 7. Comprehensive Audit Logs & Incident Response            │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### ✅ **Best Practices**
-
-**✅ Use This Library For:**
-- First-line defense against common attack patterns
-- Automated detection and logging of suspicious inputs
-- PII identification and redaction  
-- Basic content moderation
-- Development and testing security validation
-
-**❌ Do NOT Rely Solely On Patterns For:**
-- Mission-critical security decisions
-- Financial or healthcare applications without additional layers
-- Advanced persistent threat protection
-- Zero-trust security environments
-
-### 🔄 **Continuous Improvement**
-
-1. **Keep Updated**: Regularly update to get latest attack signatures
-2. **Monitor Effectiveness**: Track false positive/negative rates
-3. **Layer Security**: Combine with other security tools and human oversight
-4. **Audit Regularly**: Conduct penetration testing and security reviews
-5. **Report Issues**: Responsibly disclose vulnerabilities to [security@resk.fr](mailto:security@resk.fr)
-
 ---
 
 ## 🚀 Production Ready Features
@@ -89,14 +48,7 @@ This library should be combined with multiple defense layers:
 
 ## Core Security Features
 
-### 🛡️ **Advanced Prompt Injection Detection**
-- **Multi-level detection**: Basic, medium, and high-sophistication attack patterns
-- **Confidence scoring**: Weighted detection with configurable thresholds
-- **Technique categorization**: Direct override, encoding, jailbreak, social engineering, multilingual attacks
-- **Advanced patterns**: Token manipulation, prompt leaking, adversarial suffixes
-
 ### 🚨 **Comprehensive Content Moderation**
-- **Multi-category filtering**: Toxic, adult, violence, self-harm, misinformation detection
 - **Configurable actions**: Block, warn, redact, or log violations
 - **Severity levels**: Low, medium, high with customizable thresholds
 - **Language support**: Multi-language content analysis
@@ -155,73 +107,6 @@ npm install resk-llm-ts
 # or
 yarn add resk-llm-ts
 ```
-
-## ⚠️ CRITICAL SECURITY WARNING - Frontend Usage
-
-**NEVER EXPOSE LLM API KEYS IN FRONTEND CODE!**
-
-When using this library in browser/frontend applications:
-
-❌ **DO NOT DO THIS:**
-```typescript
-// DANGEROUS - API keys exposed in browser
-const client = new ReskLLMClient({
-    openaiApiKey: 'sk-your-secret-key' // ❌ NEVER DO THIS
-});
-```
-
-✅ **DO THIS INSTEAD:**
-```typescript
-// ✅ SECURE - Frontend-only security filtering
-import { ReskSecurityFilter } from 'resk-llm-ts';
-
-const securityFilter = new ReskSecurityFilter({
-    inputSanitization: { enabled: true },
-    piiDetection: { enabled: true, redact: false, highlightOnly: true },
-    promptInjection: { enabled: true, level: 'basic', clientSideOnly: true },
-    contentModeration: { enabled: true, severity: 'medium' },
-    ui: { showWarnings: true, blockSubmission: false }
-});
-
-// Validate user input before sending to your backend
-const validation = await securityFilter.validateRequest(userRequest);
-if (validation.warnings.length > 0) {
-    // Show warnings to user, but don't block (backend will handle security)
-}
-
-// Send to YOUR SECURE BACKEND PROXY (not directly to LLM providers)
-const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${userToken}` }, // User auth, not LLM API key
-    body: JSON.stringify(userRequest)
-});
-```
-
-### Required Backend Architecture
-
-Your backend MUST implement a secure proxy:
-
-```typescript
-// backend/api/chat.ts - Secure LLM proxy
-import { ReskLLMClient } from 'resk-llm-ts';
-
-const reskClient = new ReskLLMClient({
-    openaiApiKey: process.env.OPENAI_API_KEY, // ✅ Secure server-side
-    securityConfig: {
-        promptInjection: { enabled: true, level: 'advanced' },
-        contentModeration: { enabled: true, severity: 'high' }
-    }
-});
-
-app.post('/api/chat', authenticateUser, async (req, res) => {
-    // ✅ Server-side security with full protection
-    const response = await reskClient.chat.completions.create(req.body);
-    res.json(response);
-});
-```
-
-**Frontend Security = UX Enhancement + Basic Filtering**  
-**Backend Security = Real Protection + API Key Management**
 
 ## Quick Start
 
@@ -488,7 +373,7 @@ npm run example:multi-provider
 # Vector store integration demo  
 npm run example:vector-persistence
 
-# Frontend security demo (no API keys)
+# Frontend security demo 
 npm run example:frontend-security
 ```
 
@@ -661,19 +546,7 @@ if (validation.warnings.length > 0) {
 }
 ```
 
-**Frontend Security Benefits:**
-- ✅ Immediate user feedback
-- ✅ Prevents accidental PII submission  
-- ✅ Improves user experience
-- ✅ Reduces backend load
-- ✅ No API key exposure risk
-
-**Frontend Security Limitations:**
-- ⚠️ Can be bypassed by malicious users
-- ⚠️ Not sufficient for production security
-- ⚠️ Requires backend validation as backup
-
-### 🔒 Backend Security Features (Production-Grade)
+### Backend Security Features (Production-Grade)
 
 The `ReskLLMClient` provides server-side protection:
 
@@ -705,19 +578,6 @@ const backendSecurity = new ReskLLMClient({
     vectorDbInstance: productionVectorStore
 });
 ```
-
-**Backend Security Benefits:**
-- ✅ Cannot be bypassed
-- ✅ Secure API key management
-- ✅ Advanced threat detection
-- ✅ Compliance features
-- ✅ Persistent threat intelligence
-
-## Performance Optimization
-
-### 🚀 Automatic Performance Enhancements
-
-The library includes several performance optimizations:
 
 **Intelligent Caching:**
 ```typescript
@@ -753,29 +613,6 @@ const validation = optimizer.createCircuitBreaker(
     60000   // Reset timeout (1 minute)
 );
 ```
-
-### 📊 Performance Monitoring
-
-Built-in metrics and monitoring:
-
-```typescript
-// Get performance statistics
-const stats = securityFilter.getPerformanceStats();
-console.log({
-    cacheHitRate: stats.cacheStats.hitRate,
-    averageProcessingTime: stats.averageProcessingTime,
-    totalValidations: stats.totalValidations,
-    throughput: stats.cacheStats.throughput
-});
-
-// SIEM integration for performance monitoring
-const siem = new SIEMIntegration({
-    enabled: true,
-    provider: 'datadog', // or 'splunk', 'elastic', etc.
-    filters: { includeMetrics: true }
-});
-```
-
 ## SIEM Integration & Security Monitoring
 
 ### 🔍 Enterprise Security Monitoring
@@ -880,7 +717,6 @@ class MyCustomVectorDB implements IVectorDatabase {
 }
 const client = new ReskLLMClient({ vectorDbInstance: new MyCustomVectorDB() });
 ```
-
 See [`examples/advanced_security_usage.ts`](examples/advanced_security_usage.ts) for a full example.
 
 ## Custom Patterns
@@ -914,11 +750,7 @@ The development of `resk-llm-ts` is informed by research in LLM security. Key co
 -   **Vector Similarity for Attack Detection:** Applying anomaly detection techniques.
 -   **OWASP Top 10 for LLMs:** [owasp.org](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 
-*(See original example for more detailed paper links)*
 
-## Contributing
-
-Contributions are welcome! Please open an issue or pull request on GitHub. Adhere to standard coding practices and ensure tests pass.
 
 ## License
 
