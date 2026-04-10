@@ -32,8 +32,8 @@ export const BypassDetectionDetector: BaseDetector = {
         const jailbreakMatches = collectMatches(p?.jailbreak, text);
         const stealthMatches = collectMatches(p?.stealth, text);
 
-        // Base64 decode check
-        const base64Match = text.match(/(?:[A-Za-z0-9+/]{4}){10,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?/);
+        // Base64 decode check (20+ chars for shorter payloads)
+        const base64Match = text.match(/(?:[A-Za-z0-9+/]{4}){5,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?/);
         if (base64Match) {
             try {
                 const decoded = Buffer.from(base64Match[0], 'base64').toString('utf-8');

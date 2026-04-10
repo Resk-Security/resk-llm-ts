@@ -45,7 +45,7 @@
       { "name": "html_comment_injection", "pattern": "<!--.*?(?:ignore|bypass|override|disable|skip).*?-->", "description": "Hidden instructions in HTML comments" },
       { "name": "code_block_injection", "pattern": "```[a-z]*\\s*.*?(?:ignore|bypass|override|disable|skip).*?```", "description": "Instructions hidden in code blocks" },
       { "name": "markdown_link_injection", "pattern": "\\[.*?\\]\\(.*?(?:ignore|bypass|jailbreak|override).*?\\)", "description": "Instructions in markdown link text or URLs" },
-      { "name": "base64_payload", "pattern": "(?:[A-Za-z0-9+/]{4}){10,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?", "description": "Potential base64-encoded payload (40+ chars)" },
+      { "name": "base64_payload", "pattern": "(?:[A-Za-z0-9+/]{4}){5,}(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?", "description": "Potential base64-encoded payload (20+ chars)" },
       { "name": "unicode_obfuscation", "pattern": "[\\u200b\\u200c\\u200d\\ufeff]{3,}", "description": "Unicode zero-width character obfuscation" }
     ]
   },
@@ -82,13 +82,13 @@
     ],
     "escalation": [
       { "name": "admin_mode", "pattern": "\\b(escalate|promote|upgrade)\\s+to\\s+(?:admin|root|god|superuser|owner|creator)\\s+(?:mode|access|level|privilege)", "description": "Escalate to privileged mode" },
-      { "name": "then_admin", "pattern": "\\b(?:then|after\\s+that|next\\s+step)\\s+(?:do|execute|perform|run|activate)\\s+(?:as|in)\\s+(?:admin|root|god)\\b", "description": "Sequential escalation to admin mode" }
+      { "name": "then_admin", "pattern": "\\b(?:then|after\\s+that|next\\s+step)?\\s*(?:do|execute|perform|run|activate)\\s+(?:as\\s+)?(?:admin|root|god)\\s*(?:mode|access|level|privilege)?\\b", "description": "Sequential escalation to admin mode" }
     ]
   },
   "exfiltration": {
     "enabled": true,
     "endpoint_injection": [
-      { "name": "send_to_endpoint", "pattern": "\\b(?:send|post|transmit|forward)\\s+(?:the\\s+)?(?:data|response|result|output|info(?:rmation)?)\\s+to\\s+https?://", "description": "Send data to external endpoint" },
+      { "name": "send_to_endpoint", "pattern": "\\b(?:send|post|transmit|forward)\\s+(?:(?:all|the|user)\\s+)*\\s*(?:data|response|result|output|info(?:rmation)?)\\s+(?:and\\s+.*)?\\s*to\\s+https?://", "description": "Send data to external endpoint" },
       { "name": "redirect_response", "pattern": "\\bredirect\\s+(?:the\\s+)?(?:response|output|data|result)\\s+to\\s+https?://", "description": "Redirect response to external server" },
       { "name": "callback_url", "pattern": "\\b(?:webhook|callback)\\s+(?:notify\\s+)?url\\s+https?://", "description": "Webhook/callback URL injection" }
     ],
@@ -120,7 +120,7 @@
       { "name": "processing_ignore", "pattern": "\\b(?:when|while)\\s+(?:processing|running|executing)\\s+(?:also|additionally)\\s+(?:ignore|disregard|bypass|skip)", "description": "Ignore checks during processing" }
     ],
     "trust_exploit": [
-      { "name": "trusted_source", "pattern": "\\bfrom\\s+(?:a\\s+)?(?:trusted|verified|authenticated|authorized)\\s+(?:source|sender|user|admin)\\s+(?:ignore|bypass|skip|override)", "description": "Claim trusted source to bypass checks" },
+      { "name": "trusted_source", "pattern": "\\bfrom\\s+(?:a\\s+)?(?:(?:trusted|verified|authenticated|authorized)\\s+)+(?:source|sender|user|admin)?", "description": "Claim trusted source to bypass checks" },
       { "name": "supervisor_inject", "pattern": "\\bas\\s+(?:the\\s+)?(?:supervisor|manager|admin|coordinator|dispatcher|director)\\s+(?:instruct|command|tell|direct)\\s+(?:you|the|to)", "description": "Authority figure injection" }
     ]
   },
@@ -189,7 +189,7 @@
       { "name": "emotional_manipulation", "pattern": "\\b(?:families\\s+will\\s+suffer|lives\\s+(?:are\\s+at\\s+)?stake|people\\s+will\\s+(?:die|be\\s+hurt|suffer)|children\\s+(?:are\\s+in\\s+)?danger)", "description": "Emotional manipulation to coerce response" }
     ],
     "oversight_evasion": [
-      { "name": "academic_framing", "pattern": "\\b(?:for\\s+(?:an?\\s+)?(?:academic|educational|scholarly|research)\\s+(?:purposes?|study|exercise|project))", "description": "Framed as academic/educational purpose" },
+      { "name": "academic_framing", "pattern": "\\b(?:for\\s+(?:an?\\s+)?(?:(?:academic|educational|scholarly|research)(?:\\s+and\\s+|\\s+))+(?:purposes?|study|exercise|project))", "description": "Framed as academic/educational purpose" },
       { "name": "hypothetical_scenario", "pattern": "\\b(?:in\\s+(?:a\\s+)?(?:hypothetical|theoretical|fictional|simulated)\\s+(?:scenario?|situation|example|context|case))", "description": "Hypothetical scenario framing" },
       { "name": "red_team_framing", "pattern": "\\b(?:as\\s+(?:a\\s+)?(?:security\\s+)?(?:researcher|pentester|analyst)\\s+(?:performing|doing|conducting)\\s+(?:red-?teaming?|penetration\\s+testing|attack\\s+simulation|threat\\s+modeling))", "description": "Red team / penetration testing framing" },
       { "name": "roleplay_evil", "pattern": "\\b(?:role-?playing?\\s+as\\s+(?:a|an)\\s+(?:evil|malicious|harmful|adversarial|criminal|hacker))", "description": "Roleplaying as a malicious actor" },

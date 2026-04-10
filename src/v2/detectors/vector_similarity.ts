@@ -17,7 +17,7 @@ export class VectorSimilarityDetector implements BaseDetector {
     private idf: Record<string, number>;
     private totalDocs: number;
 
-    constructor(threshold = 0.75) {
+    constructor(threshold = 0.85) {
         const section = getPatternValue('vector_similarity', 'attack_patterns') as AttackPattern[] | undefined;
         this.patterns = section ?? [];
         this.enabled = section !== undefined;
@@ -126,13 +126,13 @@ export class VectorSimilarityDetector implements BaseDetector {
         let severity: Severity;
         let confidence: number;
 
-        if (topScore >= 0.9) {
+        if (topScore >= 0.95) {
             severity = Severity.CRITICAL;
             confidence = topScore;
-        } else if (topScore >= 0.85) {
+        } else if (topScore >= 0.90) {
             severity = Severity.HIGH;
             confidence = topScore;
-        } else if (topScore >= 0.75) {
+        } else if (topScore >= 0.85) {
             severity = Severity.MEDIUM;
             confidence = topScore;
         } else {

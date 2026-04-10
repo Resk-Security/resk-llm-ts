@@ -104,6 +104,11 @@ export class AclDecisionTreeDetector implements BaseDetector {
             return DetectionResult.safe('acl_decision_tree', 'No decision tree configured');
         }
 
+        // If no context is provided (no user_role specified), allow by default
+        if (!context || Object.keys(context).length === 0) {
+            return DetectionResult.safe('acl_decision_tree', 'No ACL context provided, allowing by default');
+        }
+
         const ctx = context ?? {};
         const decision = this.evaluate(this.root, ctx, []);
         return this.actionToDetection(decision);

@@ -49,9 +49,9 @@ export const ExfiltrationDetector: BaseDetector = {
         let severity: Severity;
         let confidence: number;
 
-        if (highCount >= 2) {
+        if (highCount >= 2 || (highCount >= 1 && mediumCount >= 1)) {
             severity = Severity.CRITICAL;
-            confidence = Math.min(0.98, 0.75 + highCount * 0.1);
+            confidence = Math.min(0.98, 0.75 + (highCount + mediumCount) * 0.1);
         } else if (highCount >= 1) {
             severity = Severity.HIGH;
             confidence = Math.min(0.85, 0.55 + mediumCount * 0.1);
