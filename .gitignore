@@ -1,5 +1,6 @@
 dist/
 node_modules/
+docs/
 *.log
 .DS_Store
 *.js.map

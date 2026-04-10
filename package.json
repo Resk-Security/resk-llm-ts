@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc",
     "test": "bun run src/v2/index.test.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "docs:build": "typedoc"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,11 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/express": "^5.0.6",
+    "flatted": "^3.3.3",
+    "hono": "^4.7.7",
+    "minimatch": "^10.0.1",
+    "picomatch": "^4.0.2",
+    "typedoc": "^0.28.0",
     "typescript": "^5.4.5"
   },
   "files": ["dist/**/*"]
