@@ -1,6 +1,6 @@
 {
   "name": "resk-llm-ts",
-  "version": "2.1.2",
+  "version": "1.0.0",
   "description": "Comprehensive security toolkit for LLM applications - TypeScript",
   "type": "module",
   "main": "dist/index.js",
