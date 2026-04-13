@@ -3,6 +3,9 @@
 [![Bun Compatible](https://img.shields.io/badge/JS-Bun-f5f5f5)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6)](https://www.typescriptlang.org)
 [![LLM Security](https://img.shields.io/badge/LLM-Security-red)](https://github.com/Resk-Security/resk-llm-js)
+[![NPM Version](https://img.shields.io/npm/v/resk-llm-ts.svg)](https://www.npmjs.com/package/resk-llm-ts)
+[![NPM Downloads](https://img.shields.io/npm/dm/resk-llm-ts.svg)](https://www.npmjs.com/package/resk-llm-ts)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://resk-security.github.io/resk-llm-ts/)
 
 # RESK-LLM-TS v2.1
 
@@ -110,6 +113,11 @@ bun run src/v2/index.test.ts
 ## Research
 
 - [SSRN 6372438](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6372438) -- LLM vulnerability taxonomy
+
+## Links
+
+- 📦 [NPM Package](https://www.npmjs.com/package/resk-llm-ts)
+- 📚 [Online Documentation](https://resk-security.github.io/resk-llm-ts/)
 
 ## Why v2.1?
 

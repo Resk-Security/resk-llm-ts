@@ -1,12 +1,12 @@
 {
   "name": "resk-llm-ts",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "description": "Comprehensive security toolkit for LLM applications - TypeScript",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/v2/config && cp src/v2/config/patterns.json dist/v2/config/",
     "test": "bun run src/v2/index.test.ts",
     "lint": "tsc --noEmit",
     "docs:build": "typedoc"
