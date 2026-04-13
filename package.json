@@ -14,15 +14,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Resk-Security/resk-llm-js"
+    "url": "git+https://github.com/Resk-Security/resk-llm-ts.git"
   },
   "keywords": ["llm", "ai", "security", "openrouter", "resk", "prompt-injection", "bun", "typescript"],
   "author": "Resk <contact@resk.fr>",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/Resk-Security/resk-llm-js/issues"
+    "url": "https://github.com/Resk-Security/resk-llm-ts/issues"
   },
-  "homepage": "https://github.com/Resk-Security/resk-llm-js#readme",
+  "homepage": "https://github.com/Resk-Security/resk-llm-ts#readme",
   "dependencies": {},
   "peerDependencies": {
     "express": "^4.x",

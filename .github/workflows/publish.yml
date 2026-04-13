@@ -74,7 +74,7 @@ jobs:
         run: npm pack --dry-run
 
       - name: Publish package to npmjs
-        run: npm publish
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Use npm token secret
 
