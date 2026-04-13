@@ -7,6 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc && mkdir -p dist/v2/config && cp src/v2/config/patterns.json dist/v2/config/",
+    "build:prod": "bun run build",
     "test": "bun run src/v2/index.test.ts",
     "lint": "tsc --noEmit",
     "docs:build": "typedoc"
