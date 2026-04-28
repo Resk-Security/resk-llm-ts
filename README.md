@@ -13,6 +13,8 @@
 
 ## Quick Start
 
+##### Documentations : https://resk-security.github.io/resk-llm-ts/
+
 ```bash
 bun install resk-llm-ts
 ```
