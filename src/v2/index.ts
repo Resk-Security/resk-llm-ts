@@ -1,14 +1,23 @@
-// resk-llm-ts v2.1 - Main entry point for enhanced security module
+// resk-llm-ts v2 - Main entry point for the security module
 
 // Core
-export { DetectionResult, Severity, ThreatCategory, type BaseDetector, type DetectorMatch } from './core/detector';
-export { SecurityPipeline, type PipelineResult } from './core/pipeline';
-export { DEFAULT_CONFIG, type SecurityConfig, type ThreatThreshold, type DetectorSection } from './core/config';
-export { ConversationContext, type ConversationEntry } from './core/context';
-export { RESKError, DetectionError, PipelineError, ConfigurationError } from './core/exceptions';
+export { DetectionResult, Severity, ThreatCategory, type BaseDetector, type DetectorMatch } from './core/detector.js';
+export { SecurityPipeline, type PipelineResult, type PipelineOptions } from './core/pipeline.js';
+export { DEFAULT_CONFIG, type SecurityConfig, type DetectorSection } from './core/config.js';
+export { ConversationContext, type ConversationEntry } from './core/context.js';
+export { RESKError, DetectionError, PipelineError, ConfigurationError } from './core/exceptions.js';
 
 // Detectors
-export * from './detectors';
+export * from './detectors/index.js';
+
+// Protection modules
+export * from './protection/index.js';
+
+// Integrations (Express, Hono, OpenAI)
+export * from './integrations/index.js';
+
+// Ready-to-use pipeline with every built-in detector
+export { createDefaultPipeline, defaultDetectors } from './defaults.js';
 
 // Pattern loader
-export { loadPatternConfig, loadSection, compilePatterns, getPatternValue } from './core/pattern_loader';
+export { loadPatternConfig, reloadPatternConfig, loadSection, compilePatterns, getPatternValue } from './core/pattern_loader.js';

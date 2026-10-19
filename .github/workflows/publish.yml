@@ -39,7 +39,7 @@ jobs:
         run: bun run build
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
   build-and-publish:
     needs: test # Run only if tests pass

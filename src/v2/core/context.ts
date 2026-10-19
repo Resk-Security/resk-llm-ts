@@ -1,4 +1,4 @@
-import { Severity } from './detector';
+import { Severity } from './detector.js';
 
 export interface ConversationEntry {
     text: string;

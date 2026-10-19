@@ -1,5 +1,5 @@
-import { DetectionResult, ThreatCategory, Severity, type BaseDetector, type DetectorMatch } from '../core/detector';
-import { getPatternValue } from '../core/pattern_loader';
+import { DetectionResult, ThreatCategory, Severity, type BaseDetector, type DetectorMatch } from '../core/detector.js';
+import { getPatternValue } from '../core/pattern_loader.js';
 
 interface AttackPattern {
     label: string;
@@ -35,10 +35,12 @@ export class VectorSimilarityDetector implements BaseDetector {
             }
         }
 
-        // Compute IDF = log(totalDocs / df)
+        // Smoothed IDF = log((N + 1) / (df + 1)) + 1, so a token shared by every
+        // document (or a vocabulary of one) still carries weight instead of
+        // collapsing the whole vector to zero.
         this.idf = {};
         for (const token of Object.keys(docFrequency)) {
-            this.idf[token] = Math.log(this.totalDocs / docFrequency[token]);
+            this.idf[token] = Math.log((this.totalDocs + 1) / (docFrequency[token]! + 1)) + 1;
         }
     }
 

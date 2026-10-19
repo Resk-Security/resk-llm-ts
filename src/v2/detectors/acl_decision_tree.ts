@@ -1,5 +1,5 @@
-import { DetectionResult, ThreatCategory, Severity, type BaseDetector, type DetectorMatch } from '../core/detector';
-import { getPatternValue } from '../core/pattern_loader';
+import { DetectionResult, ThreatCategory, Severity, type BaseDetector, type DetectorMatch } from '../core/detector.js';
+import { getPatternValue } from '../core/pattern_loader.js';
 
 interface AclNode {
     action?: 'allow' | 'deny' | 'warn' | 'block';
@@ -16,7 +16,7 @@ interface AclDecision {
 
 export class AclDecisionTreeDetector implements BaseDetector {
     readonly name = 'acl_decision_tree';
-    readonly category = ThreatCategory.DIRECT_INJECTION;
+    readonly category = ThreatCategory.ACCESS_CONTROL;
     enabled: boolean;
 
     private root: AclNode | null;
@@ -60,7 +60,7 @@ export class AclDecisionTreeDetector implements BaseDetector {
         return [{
             name,
             match: `path: ${action.path.join(' -> ')}`,
-            category: ThreatCategory.DIRECT_INJECTION,
+            category: ThreatCategory.ACCESS_CONTROL,
         }];
     }
 
@@ -70,7 +70,7 @@ export class AclDecisionTreeDetector implements BaseDetector {
                 return DetectionResult.safe('acl_decision_tree', `ACL decision: ${action.reason}`);
 
             case 'warn':
-                return DetectionResult.threat('acl_decision_tree', ThreatCategory.DIRECT_INJECTION, {
+                return DetectionResult.threat('acl_decision_tree', ThreatCategory.ACCESS_CONTROL, {
                     severity: Severity.LOW,
                     confidence: 0.3,
                     reason: `ACL warning: ${action.reason}`,
@@ -78,7 +78,7 @@ export class AclDecisionTreeDetector implements BaseDetector {
                 });
 
             case 'deny':
-                return DetectionResult.threat('acl_decision_tree', ThreatCategory.DIRECT_INJECTION, {
+                return DetectionResult.threat('acl_decision_tree', ThreatCategory.ACCESS_CONTROL, {
                     severity: Severity.HIGH,
                     confidence: 0.85,
                     reason: `ACL denied: ${action.reason}`,
@@ -86,7 +86,7 @@ export class AclDecisionTreeDetector implements BaseDetector {
                 });
 
             case 'block':
-                return DetectionResult.threat('acl_decision_tree', ThreatCategory.DIRECT_INJECTION, {
+                return DetectionResult.threat('acl_decision_tree', ThreatCategory.ACCESS_CONTROL, {
                     severity: Severity.CRITICAL,
                     confidence: 0.95,
                     reason: `ACL blocked: ${action.reason}`,

@@ -1,7 +1,7 @@
 const HTML_RE = /<(script|style|iframe|object|embed|link|meta)[^>]*>[\s\S]*?<\/\1>|<script[^>]*>[\s\S]*?<\/script[\s\S]*?>|<!--[\s\S]*?-->/gi;
-const ZERO_WIDTH_RE = /[\u200b\u200c\u200d\ufeff]{3,}/g;
+const ZERO_WIDTH_RE = /[\u200b\u200c\u200d\u2060\ufeff]+/g;
 const BASE64_URI_RE = /data\s*:\s*(?:text|image|application)\/[^;]+;base64,[A-Za-z0-9+/]+=*/g;
-const SPECIAL_TOKEN_RE = /<\|endofprompt\|>|<\|system\|>|<\|user\|>|<\|assistant\|>|<\/system>|<\/prompt>/gi;
+const SPECIAL_TOKEN_RE = /<\|(?:endofprompt|im_start|im_end|endoftext|system|user|assistant|tool)\|>|<\/?(?:system|prompt)>/gi;
 
 export class InputSanitizer {
     private _modified = false;

@@ -19,6 +19,7 @@ export enum ThreatCategory {
     GOAL_HIJACK = 'goal_hijack',
     EXFILTRATION = 'exfiltration',
     INTER_AGENT_INJECTION = 'inter_agent_injection',
+    ACCESS_CONTROL = 'access_control',
 }
 
 export interface DetectorMatch {

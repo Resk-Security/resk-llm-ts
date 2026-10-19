@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts", "src/v2/index.ts"],
+  "entryPoints": ["src/index.ts"],
   "out": "docs",
   "name": "resk-llm-ts",
   "includeVersion": true,
@@ -10,7 +10,7 @@
   "readme": "README.md",
   "theme": "default",
   "navigationLinks": {
-    "GitHub": "https://github.com/Resk-Security/resk-llm-js",
+    "GitHub": "https://github.com/Resk-Security/resk-llm-ts",
     "npm": "https://www.npmjs.com/package/resk-llm-ts"
   },
   "sidebarLinks": {

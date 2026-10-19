@@ -16,4 +16,6 @@ export class CanaryManager {
         return { hasLeak: matched.length>0, leakedTokens: matched, totalInserted: this._tokens.size, totalLeaked: matched.length };
     }
     get tokenCount(): number { return this._tokens.size; }
+    /** Forget every token. Existing tagged texts will no longer be matched. */
+    reset(): void { this._tokens.clear(); }
 }

@@ -1,5 +1,5 @@
-import { DetectionResult, ThreatCategory, Severity, type BaseDetector, type DetectorMatch } from '../core/detector';
-import { loadSection } from '../core/pattern_loader';
+import { DetectionResult, ThreatCategory, Severity, type BaseDetector, type DetectorMatch } from '../core/detector.js';
+import { loadSection } from '../core/pattern_loader.js';
 
 const patterns = loadSection('bypass_detection');
 

@@ -1,3 +1,3 @@
-export { ExpressMiddleware, type ExpressMiddlewareOptions } from './express_middleware';
-export { HonoMiddleware, type HonoOptions } from './hono_middleware';
-export { OpenAIWrapper } from './openai_wrapper';
+export { ExpressMiddleware, type ExpressMiddlewareOptions } from './express_middleware.js';
+export { HonoMiddleware, type HonoOptions } from './hono_middleware.js';
+export { OpenAIWrapper } from './openai_wrapper.js';

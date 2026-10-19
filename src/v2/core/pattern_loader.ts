@@ -1,5 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 interface PatternEntry { name: string; pattern: string; description: string; }
 interface PatternSection {
@@ -15,16 +16,56 @@ interface PatternsFile {
 }
 
 let _cache: PatternsFile | null = null;
+let _warnedMissing = false;
+
+/**
+ * Resolve the directory of this module in a way that works both under ESM
+ * (`import.meta.url`) and in bundled/CJS contexts where `import.meta` may be
+ * unavailable.
+ */
+function moduleDir(): string {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        const url = (import.meta as ImportMeta | undefined)?.url;
+        if (url) return path.dirname(fileURLToPath(url));
+    } catch {
+        /* import.meta unavailable (e.g. transpiled to CJS) */
+    }
+    return typeof __dirname !== 'undefined' ? __dirname : (typeof process !== 'undefined' ? process.cwd() : '.');
+}
+
+function candidatePaths(): string[] {
+    const candidates: string[] = [];
+    const override = typeof process !== 'undefined' ? process.env?.RESK_PATTERNS_PATH : undefined;
+    if (override) candidates.push(override);
+    candidates.push(path.join(moduleDir(), '..', 'config', 'patterns.json'));
+    if (typeof process !== 'undefined' && process.cwd) {
+        candidates.push(path.join(process.cwd(), 'src', 'v2', 'config', 'patterns.json'));
+    }
+    return candidates;
+}
 
 export function loadPatternConfig(): PatternsFile {
     if (_cache) return _cache;
-    const configPath = path.join(__dirname, '..', 'config', 'patterns.json');
-    if (fs.existsSync(configPath)) {
+    for (const configPath of candidatePaths()) {
+        if (!fs.existsSync(configPath)) continue;
         try {
-            _cache = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        } catch { /* ignore */ }
+            _cache = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as PatternsFile;
+            return _cache;
+        } catch {
+            /* try the next candidate */
+        }
     }
-    return _cache ?? {};
+    if (!_warnedMissing) {
+        _warnedMissing = true;
+        // A missing pattern file silently disables every detector: never fail quietly.
+        console.warn(
+            '[resk-llm-ts] patterns.json could not be loaded from: ' +
+            candidatePaths().join(', ') +
+            '. Set RESK_PATTERNS_PATH to point at it. All detectors are disabled.',
+        );
+    }
+    return {};
 }
 
 export function loadSection(name: string): PatternSection | null {
@@ -56,4 +97,15 @@ export function getPatternValue(section: string, key: string): unknown {
     const config = loadPatternConfig();
     const sec = config[section] as Record<string, unknown> | undefined;
     return sec?.[key];
+}
+
+/**
+ * Drop the cached pattern file so the next access re-reads it from disk. Keeps
+ * the module's public surface useful when patterns are edited or overridden via
+ * `RESK_PATTERNS_PATH` at runtime.
+ */
+export function reloadPatternConfig(): PatternsFile {
+    _cache = null;
+    _warnedMissing = false;
+    return loadPatternConfig();
 }
