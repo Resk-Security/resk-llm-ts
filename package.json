@@ -1,7 +1,7 @@
 {
   "name": "resk-llm-ts",
   "version": "2.2.0",
-  "description": "Comprehensive security toolkit for LLM applications - TypeScript - https://resk.fr",
+  "description": "Prompt-injection and LLM security toolkit for Node.js and Bun - https://resk.fr",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -49,7 +49,7 @@
     "typescript"
   ],
   "author": "Resk <contact@resk.fr>",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Resk-Security/resk-llm-ts/issues"
   },
@@ -61,9 +61,15 @@
     "openai": "^4.0.0"
   },
   "peerDependenciesMeta": {
-    "express": { "optional": true },
-    "hono": { "optional": true },
-    "openai": { "optional": true }
+    "express": {
+      "optional": true
+    },
+    "hono": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/bun": "latest",

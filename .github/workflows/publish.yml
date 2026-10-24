@@ -73,8 +73,15 @@ jobs:
       - name: Verify package contents
         run: npm pack --dry-run
 
-      - name: Publish package to npmjs
-        run: npm publish --access public
+      - name: Publish package to npmjs (skip if version already published)
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "Version ${VERSION} already published - skipping."
+          else
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # Use npm token secret
 
